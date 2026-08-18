@@ -38,6 +38,31 @@ describe('계정 부트스트랩 (entity-device-account)', () => {
     expect(second.json().accountId).toBe(first.json().accountId)
   })
 
+  it('재부트스트랩은 토큰을 회전한다 — 이전 토큰은 무효화', async () => {
+    const deviceKey = randomUUID()
+    const first = await ctx.app.inject({
+      method: 'POST',
+      url: '/v1/accounts/bootstrap',
+      payload: { deviceKey, platform: 'ios' },
+    })
+    const oldToken = first.json().accessToken as string
+
+    const second = await ctx.app.inject({
+      method: 'POST',
+      url: '/v1/accounts/bootstrap',
+      payload: { deviceKey, platform: 'ios' },
+    })
+    const newToken = second.json().accessToken as string
+    expect(newToken).not.toBe(oldToken)
+
+    const withOld = await ctx.app.inject({
+      method: 'GET',
+      url: '/v1/feed',
+      headers: { authorization: `Bearer ${oldToken}` },
+    })
+    expect(withOld.statusCode).toBe(401)
+  })
+
   it('토큰 없이 보호 라우트 접근 시 UNAUTHORIZED', async () => {
     const response = await ctx.app.inject({ method: 'GET', url: '/v1/feed' })
     expect(response.statusCode).toBe(401)
@@ -227,6 +252,31 @@ describe('큐레이션 주제 크레딧 차감', () => {
     })
     expect(response.statusCode).toBe(422)
     expect(response.json().token).toBe('INSUFFICIENT_CREDIT')
+  })
+
+  it('큐레이션 집계는 슬라이딩 윈도우를 타지 않는다 — 2시간 지난 표도 유지', async () => {
+    const { accountId, headers } = await resolvedAccount()
+    await castWeatherVote(headers, 'rain') // 크레딧 확보
+    await ctx.app.inject({
+      method: 'PUT',
+      url: `/v1/topics/${CURATED_ID}/votes`,
+      headers,
+      payload: { optionValue: 'kfood' },
+    })
+    // 표를 윈도우 밖(3시간 전)으로 밀어도 큐레이션 집계엔 남아야 한다
+    await ctx.db
+      .update(votes)
+      .set({ castAt: sql`${votes.castAt} - interval '3 hours'` })
+      .where(and(eq(votes.accountId, accountId), eq(votes.topicId, CURATED_ID)))
+
+    const feed = await ctx.app.inject({ method: 'GET', url: '/v1/feed', headers })
+    const curated = feed
+      .json()
+      .topics.find((entry: { topic: { id: string } }) => entry.topic.id === CURATED_ID)
+    expect(curated.tally.counts.kfood).toBeGreaterThanOrEqual(1)
+    // 최소표본 규칙도 큐레이션엔 미적용 — 5표 미만이어도 1위 공개
+    expect(curated.tally.sampleSufficient).toBe(true)
+    expect(curated.tally.leadingOption).toBeDefined()
   })
 
   it('마감된 주제는 TOPIC_CLOSED', async () => {

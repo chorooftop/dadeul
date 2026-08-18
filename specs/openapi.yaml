@@ -30,6 +30,8 @@ paths:
       description: >
         기기 키(플랫폼 보존 저장소의 UUID)로 계정을 조회하고, 없으면 생성한다.
         가입 절차 없음. 재설치 시 같은 키가 오면 같은 계정이 복원된다.
+        토큰은 호출마다 회전(재발급)되며 이전 토큰은 즉시 무효화된다 —
+        서버는 해시만 저장하므로 평문 토큰은 이 응답에만 존재한다.
       security: []
       requestBody:
         required: true
@@ -307,7 +309,10 @@ components:
 
     Tally:
       type: object
-      description: 슬라이딩 윈도우 2h 집계 스냅샷 (entity-tally). sampleSufficient=false면 비율 숨김
+      description: >
+        집계 스냅샷 (entity-tally). 집계 전략은 주제 kind로 갈린다 —
+        weather는 슬라이딩 윈도우 2h, curated는 기간제 누적 (rule-sliding-window-tally DO NOT).
+        sampleSufficient=false면 비율 숨김 (날씨 전용 — curated는 항상 true)
       required: [topicId, counts, totalVotes, sampleSufficient, computedAt]
       properties:
         topicId: { type: string }

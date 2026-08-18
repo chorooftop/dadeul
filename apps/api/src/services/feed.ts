@@ -1,7 +1,8 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { type Db } from '../db/client.js'
 import { regions, topics, votes } from '../db/schema.js'
 import { AppError } from '../domain/errors.js'
+import { isTopicOpen } from '../domain/topics.js'
 import { visibleWeatherOptions, WEATHER_TOPIC_ID } from '../domain/weather-options.js'
 import { type RegionView } from './accounts.js'
 import { getTally, type TallyResult } from './tally.js'
@@ -68,51 +69,56 @@ export async function getFeed(db: Db, input: FeedInput): Promise<FeedResult> {
   if (!weatherTopic) {
     throw new AppError('INTERNAL_ERROR', 500, 'weather topic missing — seed not applied')
   }
-  const weatherTally = await getTally(db, {
-    ...tallyBase,
-    topicId: weatherTopic.id,
-    kind: weatherTopic.kind,
-    topicOptions: weatherTopic.options,
-    regionCode: region.code,
-  })
 
   const curated = await db
     .select()
     .from(topics)
     .where(and(eq(topics.kind, 'curated'), eq(topics.status, 'active')))
-  const openCurated = curated.filter(
-    (topic) =>
-      (topic.openAt === null || topic.openAt <= input.now) &&
-      (topic.closeAt === null || topic.closeAt > input.now),
-  )
+  const openCurated = curated.filter((topic) => isTopicOpen(topic, input.now))
 
-  const curatedEntries = await Promise.all(
-    openCurated.map(async (topic): Promise<FeedResult['topics'][number]> => {
-      const topicView = {
-        id: topic.id,
-        title: topic.title,
-        kind: topic.kind,
-        status: topic.status,
-        options: topic.options,
-        regional: topic.regional,
-        creditCost: topic.creditCost,
-        ...(topic.openAt && { openAt: topic.openAt.toISOString() }),
-        ...(topic.closeAt && { closeAt: topic.closeAt.toISOString() }),
-      }
-      const tally = await getTally(db, {
-        ...tallyBase,
-        topicId: topic.id,
-        kind: topic.kind,
-        topicOptions: topic.options,
-        regionCode: topic.regional ? region.code : null,
-      })
-      const myVote = await getMyVote(db, input.accountId, topic.id)
-      return myVote ? { topic: topicView, tally, myVote } : { topic: topicView, tally }
+  // 내 표는 전 주제 한 번에 조회 — 이 엔드포인트는 모든 기기가 30분마다 부르는 위젯 경로다
+  const myVotes = await getMyVotes(db, input.accountId, [
+    WEATHER_TOPIC_ID,
+    ...openCurated.map((topic) => topic.id),
+  ])
+
+  const [weatherTally, curatedEntries, wallet] = await Promise.all([
+    getTally(db, {
+      ...tallyBase,
+      topicId: weatherTopic.id,
+      kind: weatherTopic.kind,
+      topicOptions: weatherTopic.options,
+      // votes.ts의 저장 경로와 같은 분기 — regional 전제가 어긋나면 집계가 조용히 0이 된다
+      regionCode: weatherTopic.regional ? region.code : null,
     }),
-  )
+    Promise.all(
+      openCurated.map(async (topic): Promise<FeedResult['topics'][number]> => {
+        const topicView = {
+          id: topic.id,
+          title: topic.title,
+          kind: topic.kind,
+          status: topic.status,
+          options: topic.options,
+          regional: topic.regional,
+          creditCost: topic.creditCost,
+          ...(topic.openAt && { openAt: topic.openAt.toISOString() }),
+          ...(topic.closeAt && { closeAt: topic.closeAt.toISOString() }),
+        }
+        const tally = await getTally(db, {
+          ...tallyBase,
+          topicId: topic.id,
+          kind: topic.kind,
+          topicOptions: topic.options,
+          regionCode: topic.regional ? region.code : null,
+        })
+        const myVote = myVotes.get(topic.id)
+        return myVote ? { topic: topicView, tally, myVote } : { topic: topicView, tally }
+      }),
+    ),
+    getWallet(db, input.accountId, input.now, input.dailyCreditCap),
+  ])
 
-  const wallet = await getWallet(db, input.accountId, input.now, input.dailyCreditCap)
-  const weatherMyVote = await getMyVote(db, input.accountId, WEATHER_TOPIC_ID)
+  const weatherMyVote = myVotes.get(WEATHER_TOPIC_ID)
 
   return {
     region: {
@@ -131,17 +137,22 @@ export async function getFeed(db: Db, input: FeedInput): Promise<FeedResult> {
   }
 }
 
-async function getMyVote(
+async function getMyVotes(
   db: Db,
   accountId: string,
-  topicId: string,
-): Promise<MyVoteView | undefined> {
-  const [vote] = await db
-    .select({ optionValue: votes.optionValue, castAt: votes.castAt })
-    .from(votes)
-    .where(and(eq(votes.accountId, accountId), eq(votes.topicId, topicId)))
-  if (!vote) {
-    return undefined
+  topicIds: string[],
+): Promise<Map<string, MyVoteView>> {
+  if (topicIds.length === 0) {
+    return new Map()
   }
-  return { optionValue: vote.optionValue, castAt: vote.castAt.toISOString() }
+  const rows = await db
+    .select({ topicId: votes.topicId, optionValue: votes.optionValue, castAt: votes.castAt })
+    .from(votes)
+    .where(and(eq(votes.accountId, accountId), inArray(votes.topicId, topicIds)))
+  return new Map(
+    rows.map((row) => [
+      row.topicId,
+      { optionValue: row.optionValue, castAt: row.castAt.toISOString() },
+    ]),
+  )
 }

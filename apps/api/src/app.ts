@@ -29,8 +29,9 @@ export function buildApp(config: Config, deps: AppDeps): FastifyInstance {
   app.decorate('deps', deps)
   app.decorate('authenticate', makeAuthenticate(deps.db))
 
-  // 에러 토큰 규약: 유저 노출 문구는 클라이언트가 토큰으로 결정한다 (specs/openapi.yaml Error)
-  app.setErrorHandler((error: FastifyError | AppError, _request, reply) => {
+  // 에러 토큰 규약: 유저 노출 문구는 클라이언트가 토큰으로 결정한다 (specs/openapi.yaml Error).
+  // 비-AppError의 message는 PG 에러 등 내부 구조를 담을 수 있어 응답에 싣지 않는다 — 로그에만 남긴다
+  app.setErrorHandler((error: FastifyError | AppError, request, reply) => {
     if (error instanceof AppError) {
       return reply.status(error.statusCode).send({ token: error.token, message: error.message })
     }
@@ -39,6 +40,11 @@ export function buildApp(config: Config, deps: AppDeps): FastifyInstance {
     }
     app.log.error(error)
     const statusCode = error.statusCode ?? 500
+    if (statusCode >= 500) {
+      return reply
+        .status(statusCode)
+        .send({ token: 'INTERNAL_ERROR', message: `internal error (requestId: ${request.id})` })
+    }
     const token = statusCode === 400 ? 'BAD_REQUEST' : 'INTERNAL_ERROR'
     return reply.status(statusCode).send({ token, message: error.message })
   })

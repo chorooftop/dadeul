@@ -1,8 +1,9 @@
-import { and, count, eq, gte, sql } from 'drizzle-orm'
+import { and, eq, gte, sql, sum } from 'drizzle-orm'
 import { type Db } from '../db/client.js'
 import { accounts, creditLedger, regions, topics, votes } from '../db/schema.js'
 import { AppError } from '../domain/errors.js'
 import { kstDayStart, windowStart } from '../domain/time.js'
+import { isTopicOpen } from '../domain/topics.js'
 import { isSubmittableWeatherOption } from '../domain/weather-options.js'
 import { getTally, type TallyResult } from './tally.js'
 import { getWallet, type WalletView } from './wallet.js'
@@ -27,18 +28,17 @@ export interface CastVoteResult {
 // action-vote-cast: 검증 → UPSERT(rule-revote-replace) → 크레딧(rule-credit-grant) → 집계.
 // 크레딧 지급 조건: 새 레코드이거나 직전 표가 슬라이딩 윈도우 밖일 때 (신선한 신호 공급 보상).
 // 윈도우 내 재투표는 미지급. 일일 상한 도달 시 투표는 허용하고 크레딧만 미지급.
+// 응답용 tally·wallet까지 같은 트랜잭션에서 계산 — 방금 투표한 유저가 자기 투표가
+// 반영되지 않은 값을 받으면 안 된다
 export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteResult> {
   const { accountId, topicId, optionValue, now } = input
 
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const [topic] = await tx.select().from(topics).where(eq(topics.id, topicId))
     if (!topic || topic.status === 'scheduled') {
       throw new AppError('TOPIC_NOT_FOUND', 404, `topic not found: ${topicId}`)
     }
-    const periodClosed =
-      (topic.closeAt !== null && topic.closeAt <= now) ||
-      (topic.openAt !== null && topic.openAt > now)
-    if (topic.status === 'closed' || periodClosed) {
+    if (!isTopicOpen(topic, now)) {
       throw new AppError('TOPIC_CLOSED', 409, `topic closed: ${topicId}`)
     }
 
@@ -66,8 +66,15 @@ export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteRe
       regionCode = region.code
     }
 
-    // 잔액·크레딧 판정의 race 방지 — 계정 행 잠금
-    await tx.execute(sql`select 1 from ${accounts} where ${accounts.id} = ${accountId} for update`)
+    // 잔액·크레딧 판정의 race 방지 — 계정 행 잠금. 같은 계정의 동시 요청이 여기서 직렬화되어
+    // SELECT-then-INSERT의 PK 충돌 race도 함께 차단된다
+    // execute의 반환 타입은 드라이버 HKT에 따라 달라 공통 베이스에선 unknown — rows만 사용
+    const locked = (await tx.execute(
+      sql`select 1 from ${accounts} where ${accounts.id} = ${accountId} for update`,
+    )) as { rows: unknown[] }
+    if (locked.rows.length === 0) {
+      throw new AppError('UNAUTHORIZED', 401, `account not found: ${accountId}`)
+    }
 
     const [existing] = await tx
       .select({ castAt: votes.castAt })
@@ -86,38 +93,29 @@ export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteRe
     }
 
     if (topic.kind === 'weather') {
-      const freshSignal =
-        !existing || existing.castAt < windowStart(now, input.windowHours)
+      const freshSignal = !existing || existing.castAt < windowStart(now, input.windowHours)
       if (freshSignal) {
         await grantWeatherCredit(tx, accountId, topicId, now, input.dailyCreditCap)
       }
     } else if (!existing && topic.creditCost > 0) {
       await deductCredit(tx, accountId, topicId, topic.creditCost, now)
     }
+
+    const [tally, wallet] = await Promise.all([
+      getTally(tx, {
+        topicId,
+        kind: topic.kind,
+        topicOptions: topic.options,
+        regionCode,
+        now,
+        windowHours: input.windowHours,
+        minSampleThreshold: input.minSampleThreshold,
+      }),
+      getWallet(tx, accountId, now, input.dailyCreditCap),
+    ])
+
+    return { vote: { optionValue, castAt: now.toISOString() }, wallet, tally }
   })
-
-  const [topic] = await db.select().from(topics).where(eq(topics.id, topicId))
-  if (!topic) {
-    throw new AppError('INTERNAL_ERROR', 500, `topic vanished mid-request: ${topicId}`)
-  }
-  const regionForTally = topic.regional
-    ? (input.regionCode ?? (await cachedRegionCode(db, accountId)))
-    : null
-
-  const [tally, wallet] = await Promise.all([
-    getTally(db, {
-      topicId,
-      kind: topic.kind,
-      topicOptions: topic.options,
-      regionCode: regionForTally ?? null,
-      now,
-      windowHours: input.windowHours,
-      minSampleThreshold: input.minSampleThreshold,
-    }),
-    getWallet(db, accountId, now, input.dailyCreditCap),
-  ])
-
-  return { vote: { optionValue, castAt: now.toISOString() }, wallet, tally }
 }
 
 async function cachedRegionCode(db: Db, accountId: string): Promise<string | null> {
@@ -128,6 +126,7 @@ async function cachedRegionCode(db: Db, accountId: string): Promise<string | nul
   return account?.regionCode ?? null
 }
 
+// 일일 상한은 행 수가 아니라 적립 금액 합으로 판정 — 명세 단위는 "3크레딧"이다
 async function grantWeatherCredit(
   tx: Db,
   accountId: string,
@@ -136,7 +135,7 @@ async function grantWeatherCredit(
   dailyCap: number,
 ): Promise<void> {
   const [earned] = await tx
-    .select({ grants: count() })
+    .select({ total: sum(creditLedger.amount) })
     .from(creditLedger)
     .where(
       and(
@@ -145,7 +144,7 @@ async function grantWeatherCredit(
         gte(creditLedger.createdAt, kstDayStart(now)),
       ),
     )
-  if ((earned?.grants ?? 0) >= dailyCap) {
+  if (Number(earned?.total ?? 0) >= dailyCap) {
     return
   }
 

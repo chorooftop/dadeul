@@ -1,4 +1,4 @@
-import { and, count, eq, gte } from 'drizzle-orm'
+import { and, eq, gte, sum } from 'drizzle-orm'
 import { type Db } from '../db/client.js'
 import { accounts, creditLedger } from '../db/schema.js'
 import { AppError } from '../domain/errors.js'
@@ -24,8 +24,9 @@ export async function getWallet(
     throw new AppError('UNAUTHORIZED', 401, `account not found: ${accountId}`)
   }
 
+  // 일일 적립은 행 수가 아니라 금액 합 — 상한 판정(votes.ts)과 단위를 일치시킨다
   const [earned] = await db
-    .select({ grants: count() })
+    .select({ total: sum(creditLedger.amount) })
     .from(creditLedger)
     .where(
       and(
@@ -37,7 +38,7 @@ export async function getWallet(
 
   return {
     balance: account.creditBalance,
-    dailyEarned: earned?.grants ?? 0,
+    dailyEarned: Number(earned?.total ?? 0),
     dailyCap,
   }
 }

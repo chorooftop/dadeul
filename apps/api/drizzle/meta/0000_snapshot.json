@@ -1,5 +1,5 @@
 {
-  "id": "81c71117-6a79-4670-9b37-f9d28827c392",
+  "id": "5d3f6712-f2f4-494b-be8c-3db85f7196dd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -23,16 +23,16 @@
         },
         "platform": {
           "name": "platform",
-          "type": "text",
+          "type": "platform",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "access_token": {
-          "name": "access_token",
-          "type": "uuid",
+        "access_token_hash": {
+          "name": "access_token_hash",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "region_code": {
           "name": "region_code",
@@ -55,23 +55,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "accounts_access_token_idx": {
-          "name": "accounts_access_token_idx",
-          "columns": [
-            {
-              "expression": "access_token",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "accounts_region_code_regions_code_fk": {
           "name": "accounts_region_code_regions_code_fk",
@@ -96,16 +80,21 @@
             "device_key"
           ]
         },
-        "accounts_access_token_unique": {
-          "name": "accounts_access_token_unique",
+        "accounts_access_token_hash_unique": {
+          "name": "accounts_access_token_hash_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "access_token"
+            "access_token_hash"
           ]
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "accounts_credit_balance_nonneg": {
+          "name": "accounts_credit_balance_nonneg",
+          "value": "\"accounts\".\"credit_balance\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.credit_ledger": {
@@ -133,7 +122,8 @@
         },
         "reason": {
           "name": "reason",
-          "type": "text",
+          "type": "credit_reason",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -277,13 +267,15 @@
         },
         "kind": {
           "name": "kind",
-          "type": "text",
+          "type": "topic_kind",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "status": {
           "name": "status",
-          "type": "text",
+          "type": "topic_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -463,7 +455,42 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.credit_reason": {
+      "name": "credit_reason",
+      "schema": "public",
+      "values": [
+        "weather_vote",
+        "topic_vote_cost",
+        "ops_adjustment"
+      ]
+    },
+    "public.platform": {
+      "name": "platform",
+      "schema": "public",
+      "values": [
+        "ios",
+        "android"
+      ]
+    },
+    "public.topic_kind": {
+      "name": "topic_kind",
+      "schema": "public",
+      "values": [
+        "weather",
+        "curated"
+      ]
+    },
+    "public.topic_status": {
+      "name": "topic_status",
+      "schema": "public",
+      "values": [
+        "scheduled",
+        "active",
+        "closed"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},
