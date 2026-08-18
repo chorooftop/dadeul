@@ -1,0 +1,17 @@
+{
+  "name": "dadeul-specs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "다들(dadeul) TOM 명세 저장소",
+  "bin": {
+    "tom": "tools/tom/bin/tom"
+  },
+  "scripts": {
+    "tom": "tools/tom/bin/tom",
+    "test:tom": "node --test tools/tom/test/"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

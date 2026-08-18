@@ -1,0 +1,4 @@
+#!/bin/sh
+# tom CLI 런처 — POSIX sh
+DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec node "$DIR/../lib/cli.mjs" "$@"

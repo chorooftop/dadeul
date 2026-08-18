@@ -1,0 +1,23 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: TOM CLI 회귀 테스트
+        run: npm run test:tom
+      - name: 링크 무결성 (차단)
+        run: cd specs && ../tools/tom/bin/tom validate
+      - name: 섹션 완성도 (경고만, 비차단)
+        run: cd specs && (../tools/tom/bin/tom validate --body || echo "::warning::섹션 완성도 위반 있음 — tom validate --body 확인")
+      - name: CLAUDE.md ↔ AGENTS.md 미러 검증 (차단)
+        run: diff CLAUDE.md AGENTS.md

@@ -1,0 +1,4 @@
+stores:
+  - path: ./atoms
+specs:
+  - path: ./specs
