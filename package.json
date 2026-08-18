@@ -1,17 +1,24 @@
 {
-  "name": "dadeul-specs",
+  "name": "dadeul",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "다들(dadeul) TOM 명세 저장소",
+  "description": "다들(dadeul) 모노레포 — specs(TOM) + apps(api/ios/android)",
+  "workspaces": [
+    "apps/api",
+    "packages/*"
+  ],
   "bin": {
     "tom": "tools/tom/bin/tom"
   },
   "scripts": {
     "tom": "tools/tom/bin/tom",
-    "test:tom": "node --test tools/tom/test/"
+    "test:tom": "node --test tools/tom/test/",
+    "dev:api": "npm run dev --workspace @dadeul/api",
+    "build:api": "npm run build --workspace @dadeul/api",
+    "test:api": "npm run test --workspace @dadeul/api"
   },
   "engines": {
-    "node": ">=18.17"
+    "node": ">=20"
   }
 }

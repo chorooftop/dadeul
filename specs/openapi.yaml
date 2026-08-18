@@ -1,0 +1,344 @@
+# dadeul API 스펙 — 단일 진실 공급원 (spec-first)
+# TOM 근거: action-vote-cast, action-tally-feed, action-region-resolve (specs/atoms/action/)
+# 정책 근거: rule-sliding-window-tally(2h), rule-revote-replace, rule-credit-grant(일 3회),
+#           rule-min-sample-display(5표), term-weather-option(6종 월 가변)
+# 하위호환 원칙: 필드 삭제·의미 변경 금지, 추가만 허용 (구버전 앱이 계속 살아있다)
+openapi: 3.1.0
+info:
+  title: dadeul API
+  version: 0.1.0
+  description: 다들 — 지역 기반 실시간 투표 위젯 서비스 API
+
+servers:
+  - url: https://api.dadeul.app
+    description: production (예약)
+  - url: http://localhost:3000
+    description: local
+
+tags:
+  - name: account
+  - name: region
+  - name: vote
+  - name: feed
+
+paths:
+  /v1/accounts/bootstrap:
+    post:
+      operationId: bootstrapAccount
+      tags: [account]
+      summary: 익명 기기 계정 생성/복원 (entity-device-account)
+      description: >
+        기기 키(플랫폼 보존 저장소의 UUID)로 계정을 조회하고, 없으면 생성한다.
+        가입 절차 없음. 재설치 시 같은 키가 오면 같은 계정이 복원된다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceKey, platform]
+              properties:
+                deviceKey:
+                  type: string
+                  format: uuid
+                  description: 플랫폼 보존 저장소(iOS Keychain / Android Auto Backup)의 기기 키
+                platform:
+                  type: string
+                  enum: [ios, android]
+      responses:
+        "200":
+          description: 기존 계정 복원 또는 신규 생성
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accountId, accessToken, created]
+                properties:
+                  accountId: { type: string }
+                  accessToken:
+                    type: string
+                    description: 이후 모든 요청의 Bearer 토큰
+                  created:
+                    type: boolean
+                    description: true면 신규 생성 (복원 실패 포함)
+                  region:
+                    $ref: "#/components/schemas/Region"
+                    description: 캐시된 지역 (판별 이력 없으면 없음)
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /v1/regions/resolve:
+    post:
+      operationId: resolveRegion
+      tags: [region]
+      summary: GPS 좌표 → 시군구 판별 (action-region-resolve)
+      description: >
+        좌표는 판별 즉시 폐기하며 저장하지 않는다. 시군구 코드가 저장 최소 단위.
+        판별 결과는 계정의 캐시 지역으로 저장된다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [latitude, longitude]
+              properties:
+                latitude: { type: number, minimum: -90, maximum: 90 }
+                longitude: { type: number, minimum: -180, maximum: 180 }
+      responses:
+        "200":
+          description: 판별 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "422":
+          description: REGION_UNRESOLVED — 판별 불가 좌표(해외 등), 수동 선택 fallback 유도
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/regions:
+    get:
+      operationId: listRegions
+      tags: [region]
+      summary: 지역 목록 (수동 선택 fallback용)
+      responses:
+        "200":
+          description: 활성 지역 전체 (전국 오픈)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [regions]
+                properties:
+                  regions:
+                    type: array
+                    items: { $ref: "#/components/schemas/Region" }
+
+  /v1/topics/{topicId}/votes:
+    put:
+      operationId: castVote
+      tags: [vote]
+      summary: 투표 제출 — UPSERT (action-vote-cast)
+      description: >
+        (계정, 주제)당 유효 표는 항상 1개 (rule-revote-replace). 재투표는 기존 표를 교체하며
+        크레딧 이벤트를 만들지 않는다. 날씨 주제 최초 투표는 +1 크레딧 (일 3회 상한,
+        상한 도달 시에도 투표는 허용하고 크레딧만 미지급 — rule-credit-grant).
+        PUT인 이유: 재투표=교체 시맨틱을 HTTP 메서드로 표현.
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [optionValue]
+              properties:
+                optionValue:
+                  type: string
+                  description: 선택지 값 (날씨 주제는 해당 월 노출 집합 기준 검증)
+                regionCode:
+                  type: string
+                  description: regional 주제 필수. 계정 캐시 지역과 불일치 시 요청 값 우선
+      responses:
+        "200":
+          description: 투표 반영 완료 (신규/갱신 공통)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [vote, wallet, tally]
+                properties:
+                  vote: { $ref: "#/components/schemas/MyVote" }
+                  wallet: { $ref: "#/components/schemas/Wallet" }
+                  tally:
+                    $ref: "#/components/schemas/Tally"
+                    description: 반영 직후 집계 — 클라이언트 추가 조회 불필요
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: TOPIC_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: TOPIC_CLOSED — 마감된 주제
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: INVALID_OPTION | REGION_UNRESOLVED | INSUFFICIENT_CREDIT
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /v1/feed:
+    get:
+      operationId: getFeed
+      tags: [feed]
+      summary: 집계 피드 — 위젯·홈 단일 콜 (action-tally-feed)
+      description: >
+        위젯 1회 렌더에 필요한 전부를 반환한다. 위젯과 앱 홈이 같은 응답을 소비한다
+        (스키마 분화 금지 — action-tally-feed DO NOT).
+      parameters:
+        - name: regionCode
+          in: query
+          required: false
+          schema: { type: string }
+          description: 미지정 시 계정 캐시 지역
+      responses:
+        "200":
+          description: 피드
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [region, weather, topics, wallet]
+                properties:
+                  region: { $ref: "#/components/schemas/Region" }
+                  weather:
+                    type: object
+                    required: [tally, visibleOptions]
+                    properties:
+                      tally: { $ref: "#/components/schemas/Tally" }
+                      myVote: { $ref: "#/components/schemas/MyVote" }
+                      visibleOptions:
+                        type: array
+                        items: { $ref: "#/components/schemas/WeatherOption" }
+                        description: 이번 달 노출 선택지 (term-weather-option 월 매핑, 서버 KST 기준)
+                  topics:
+                    type: array
+                    description: 활성 큐레이션 주제 + 각 집계
+                    items:
+                      type: object
+                      required: [topic, tally]
+                      properties:
+                        topic: { $ref: "#/components/schemas/Topic" }
+                        tally: { $ref: "#/components/schemas/Tally" }
+                        myVote: { $ref: "#/components/schemas/MyVote" }
+                  wallet: { $ref: "#/components/schemas/Wallet" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          description: REGION_UNRESOLVED — 지역 미판별 계정이 regionCode 없이 호출
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: bootstrapAccount가 발급한 계정 토큰
+
+  responses:
+    BadRequest:
+      description: 요청 형식 오류
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: 토큰 없음/무효
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [token, message]
+      properties:
+        token:
+          type: string
+          description: 에러 토큰은 UX다 — 클라이언트는 토큰별 고유 안내·복구 동선으로 매핑
+          enum:
+            - TOPIC_NOT_FOUND
+            - TOPIC_CLOSED
+            - INVALID_OPTION
+            - INSUFFICIENT_CREDIT
+            - REGION_UNRESOLVED
+            - REGION_INACTIVE
+            - UNAUTHORIZED
+            - BAD_REQUEST
+        message:
+          type: string
+          description: 개발용 설명 — 유저 노출 문구는 클라이언트가 토큰으로 결정
+
+    WeatherOption:
+      type: string
+      description: 날씨 선택지 6종 (term-weather-option). snow는 11~3월만 노출
+      enum: [sunny, cloudy, rain, wind, fog, snow]
+
+    Region:
+      type: object
+      required: [code, name, fullName, active]
+      properties:
+        code: { type: string, description: 시군구 행정표준코드 (term-region-code) }
+        name: { type: string, description: 단축 표시명 (강남구) }
+        fullName: { type: string, description: 정식명 (서울특별시 강남구) }
+        active: { type: boolean }
+
+    Topic:
+      type: object
+      required: [id, title, kind, status, options, regional, creditCost]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        kind: { type: string, enum: [weather, curated] }
+        status: { type: string, enum: [scheduled, active, closed], description: term-topic-status }
+        options:
+          type: array
+          items:
+            type: object
+            required: [value, label]
+            properties:
+              value: { type: string }
+              label: { type: string }
+              emoji: { type: string }
+        regional: { type: boolean }
+        creditCost: { type: integer, minimum: 0 }
+        openAt: { type: string, format: date-time }
+        closeAt: { type: string, format: date-time }
+
+    Tally:
+      type: object
+      description: 슬라이딩 윈도우 2h 집계 스냅샷 (entity-tally). sampleSufficient=false면 비율 숨김
+      required: [topicId, counts, totalVotes, sampleSufficient, computedAt]
+      properties:
+        topicId: { type: string }
+        regionCode: { type: string, description: regional 주제만, 전국이면 없음 }
+        counts:
+          type: object
+          additionalProperties: { type: integer }
+          description: 선택지 값 → 윈도우 내 유효 표 수 (전체 키 포함, 노출 필터는 클라이언트)
+        totalVotes: { type: integer }
+        sampleSufficient:
+          type: boolean
+          description: 5표 이상 여부 — 서버 판정, 클라이언트 재계산 금지 (rule-min-sample-display)
+        leadingOption: { type: string, description: sampleSufficient=true일 때만 존재 }
+        leadingRatio: { type: number, minimum: 0, maximum: 1 }
+        computedAt: { type: string, format: date-time, description: 위젯 "n분 전" 표기의 원천 }
+
+    MyVote:
+      type: object
+      description: 내 현재 유효 표 (entity-vote). 미투표면 필드 자체가 없음
+      required: [optionValue, castAt]
+      properties:
+        optionValue: { type: string }
+        castAt: { type: string, format: date-time }
+
+    Wallet:
+      type: object
+      required: [balance, dailyEarned, dailyCap]
+      properties:
+        balance: { type: integer, minimum: 0 }
+        dailyEarned: { type: integer, description: 오늘(KST) 적립한 크레딧 }
+        dailyCap: { type: integer, description: 일일 적립 상한 (현재 3) }
+
+security:
+  - bearerAuth: []

@@ -1,10 +1,24 @@
-# dadeul-specs — 다들 TOM 명세 저장소
+# dadeul — 다들 모노레포
 
-다들(지역 기반 실시간 투표 위젯) 서비스의 단일 명세 소스. 네이티브 앱(iOS/Android)과 Node API가 공유한다.
+다들(지역 기반 실시간 투표 위젯) 서비스의 모노레포. TOM 명세(`specs/`)가 단일 진실 공급원이고, 네이티브 앱과 Node API가 이를 공유한다.
 
-- iOS app: `/Users/oksang/Desktop/dadeul/dadeul-ios` _(not created yet)_
-- Android app: `/Users/oksang/Desktop/dadeul/dadeul-android` _(not created yet)_
-- Node API: `/Users/oksang/Desktop/dadeul/dadeul-api` _(not created yet)_
+## 모노레포 구조
+
+- `specs/` — TOM 명세 (atoms + specs) **+ `specs/openapi.yaml`** (API 계약의 단일 진실)
+- `apps/api/` — Fastify + PostgreSQL 백엔드 (`@dadeul/api`, npm workspace)
+- `apps/ios/` — Swift + WidgetKit _(not created yet)_
+- `apps/android/` — Kotlin + Glance _(not created yet)_
+- `tools/tom/` — TOM CLI
+- CI는 경로 필터로 분리: `validate.yml`(specs/tools), `api.yml`(apps/api + openapi)
+
+```bash
+npm run dev:api      # API 개발 서버
+npm run test:api     # API 테스트 (vitest)
+npm run test:tom     # TOM CLI 회귀 테스트
+```
+
+- API 변경 흐름: `specs/openapi.yaml` 먼저 수정 → 해당 action atom 갱신 → 구현. 하위호환 원칙: 필드 삭제·의미 변경 금지, 추가만 (구버전 앱이 계속 살아있다).
+- 서버 정책 상수(`TALLY_WINDOW_HOURS` 등, `apps/api/src/config.ts`)의 기본값은 rule atom의 확정 정책과 일치해야 한다.
 
 ## 핵심 원칙
 

@@ -1,0 +1,33 @@
+name: api
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "specs/openapi.yaml"
+      - "package.json"
+      - ".github/workflows/api.yml"
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "specs/openapi.yaml"
+      - "package.json"
+      - ".github/workflows/api.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 타입 체크
+        run: npm run typecheck --workspace @dadeul/api
+      - name: 테스트
+        run: npm run test --workspace @dadeul/api
+      - name: 빌드
+        run: npm run build --workspace @dadeul/api
