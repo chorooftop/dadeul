@@ -19,6 +19,8 @@ npm run test:tom     # TOM CLI 회귀 테스트
 
 - API 변경 흐름: `specs/openapi.yaml` 먼저 수정 → 해당 action atom 갱신 → 구현. 하위호환 원칙: 필드 삭제·의미 변경 금지, 추가만 (구버전 앱이 계속 살아있다).
 - 서버 정책 상수(`TALLY_WINDOW_HOURS` 등, `apps/api/src/config.ts`)의 기본값은 rule atom의 확정 정책과 일치해야 한다.
+- **DB**: Drizzle ORM (^0.45) + PostgreSQL. 스키마는 `apps/api/src/db/schema.ts`가 진실 — 수정 후 `npx drizzle-kit generate`(apps/api에서)로 마이그레이션 SQL 생성, `drizzle/`에 커밋. 테스트는 PGlite(인메모리 PG)에 같은 마이그레이션을 적용하므로 도커 불필요.
+- 지역 판별은 카카오 로컬 API 사용 — 로컬 실행 시 `KAKAO_REST_API_KEY` 필요 (없으면 resolve만 503).
 
 ## 핵심 원칙
 
@@ -33,7 +35,7 @@ npm run test:tom     # TOM CLI 회귀 테스트
 | 지역 단위 | 시군구, GPS 자동 매핑 | `term-region-code` |
 | 집계 방식 | 슬라이딩 윈도우 2시간 | `rule-sliding-window-tally` |
 | 재투표 | 윈도우 내 재투표 = 기존 표 갱신 (크레딧 미지급) | `rule-revote-replace` |
-| 크레딧 | 날씨 투표 1회 = 1크레딧, 무기한, 일일 적립 상한 3 | `rule-credit-grant`, `entity-credit-wallet` |
+| 크레딧 | 신선한 신호(신규 표 또는 윈도우 밖 재투표)당 1크레딧, 무기한, 일일 적립 상한 3 | `rule-credit-grant`, `entity-credit-wallet` |
 | 주제 생성 | 운영자 큐레이션 (유저 생성 없음) | `entity-topic` |
 | 인증 | 익명 기기 계정 (가입 없음), 재설치 시 플랫폼 복원 | `entity-device-account` |
 | 날씨 선택지 | 6종 풀 + 월 기반 자동 가변 (서버 큐레이션 없음) | `term-weather-option` |

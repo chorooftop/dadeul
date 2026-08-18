@@ -1,11 +1,18 @@
-import { describe, expect, it } from 'vitest'
-import { buildApp } from '../src/app.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadConfig } from '../src/config.js'
+import { createTestApp, type TestContext } from './helpers.js'
+
+let ctx: TestContext
+beforeAll(async () => {
+  ctx = await createTestApp()
+})
+afterAll(async () => {
+  await ctx.close()
+})
 
 describe('GET /health', () => {
   it('정책 상수 기본값이 확정 정책과 일치한다', async () => {
-    const app = buildApp(loadConfig({ NODE_ENV: 'test' }))
-    const response = await app.inject({ method: 'GET', url: '/health' })
+    const response = await ctx.app.inject({ method: 'GET', url: '/health' })
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({

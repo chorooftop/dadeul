@@ -5,6 +5,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_URL: z.string().url().optional(),
+  KAKAO_REST_API_KEY: z.string().min(1).optional(),
   TALLY_WINDOW_HOURS: z.coerce.number().int().positive().default(2),
   MIN_SAMPLE_THRESHOLD: z.coerce.number().int().positive().default(5),
   DAILY_CREDIT_CAP: z.coerce.number().int().positive().default(3),
