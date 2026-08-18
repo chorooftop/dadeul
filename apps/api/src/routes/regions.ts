@@ -10,7 +10,16 @@ const resolveBody = z.object({
 export async function regionRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/v1/regions/resolve',
-    { preHandler: app.authenticate },
+    {
+      preHandler: app.authenticate,
+      // 요청마다 유료 카카오 API를 호출 — 비용 증폭 방어용 별도 상한
+      config: {
+        rateLimit: {
+          max: app.config.RATE_LIMIT_RESOLVE_PER_MIN,
+          timeWindow: '1 minute',
+        },
+      },
+    },
     async (request, reply) => {
       const body = resolveBody.parse(request.body)
       const region = await resolveAndCacheRegion(

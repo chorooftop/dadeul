@@ -7,6 +7,7 @@ export type ErrorToken =
   | 'REGION_UNRESOLVED'
   | 'REGION_INACTIVE'
   | 'UNAUTHORIZED'
+  | 'RATE_LIMITED'
   | 'BAD_REQUEST'
   | 'INTERNAL_ERROR'
 

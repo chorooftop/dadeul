@@ -9,6 +9,10 @@ const envSchema = z.object({
   TALLY_WINDOW_HOURS: z.coerce.number().int().positive().default(2),
   MIN_SAMPLE_THRESHOLD: z.coerce.number().int().positive().default(5),
   DAILY_CREDIT_CAP: z.coerce.number().int().positive().default(3),
+  // 레이트 리미팅 (분당) — bootstrap은 미인증 계정 생성, resolve는 유료 카카오 호출이라 별도 상한
+  RATE_LIMIT_GLOBAL_PER_MIN: z.coerce.number().int().positive().default(120),
+  RATE_LIMIT_BOOTSTRAP_PER_MIN: z.coerce.number().int().positive().default(5),
+  RATE_LIMIT_RESOLVE_PER_MIN: z.coerce.number().int().positive().default(10),
 })
 
 export type Config = z.infer<typeof envSchema>

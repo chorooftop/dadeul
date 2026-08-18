@@ -32,6 +32,7 @@ export interface TestContext {
 
 export async function createTestApp(
   resolver: RegionResolver = new FakeRegionResolver(GANGNAM),
+  envOverrides: Record<string, string> = {},
 ): Promise<TestContext> {
   const client = new PGlite()
   const db = drizzle(client, { schema }) as unknown as Db
@@ -40,7 +41,15 @@ export async function createTestApp(
   })
   await ensureWeatherTopic(db)
 
-  const config = loadConfig({ NODE_ENV: 'test' })
+  // 기능 테스트는 한 IP(inject)에서 수십 번 호출하므로 레이트 리밋을 사실상 해제한다
+  // — 리밋 동작 자체는 rate-limit.test.ts가 낮은 상한으로 별도 검증
+  const config = loadConfig({
+    NODE_ENV: 'test',
+    RATE_LIMIT_GLOBAL_PER_MIN: '100000',
+    RATE_LIMIT_BOOTSTRAP_PER_MIN: '100000',
+    RATE_LIMIT_RESOLVE_PER_MIN: '100000',
+    ...envOverrides,
+  })
   const app = buildApp(config, { db, regionResolver: resolver })
 
   return {

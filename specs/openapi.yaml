@@ -68,6 +68,7 @@ paths:
                     $ref: "#/components/schemas/Region"
                     description: 캐시된 지역 (판별 이력 없으면 없음)
         "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
 
   /v1/regions/resolve:
     post:
@@ -100,6 +101,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
 
   /v1/regions:
     get:
@@ -249,6 +251,13 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: >
+        RATE_LIMITED — 요청 상한 초과 (전역: 분당 계정/IP 기준, bootstrap·resolve는 별도 강화 상한).
+        상한 값은 서버 설정(RATE_LIMIT_*_PER_MIN)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
     Error:
@@ -266,6 +275,7 @@ components:
             - REGION_UNRESOLVED
             - REGION_INACTIVE
             - UNAUTHORIZED
+            - RATE_LIMITED
             - BAD_REQUEST
         message:
           type: string
