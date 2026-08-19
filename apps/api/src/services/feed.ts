@@ -3,6 +3,7 @@ import { type Db } from '../db/client.js'
 import { regions, topics, votes } from '../db/schema.js'
 import { AppError } from '../domain/errors.js'
 import { isTopicOpen } from '../domain/topics.js'
+import { TEMPERATURE_OPTIONS } from '../domain/temperature-options.js'
 import { visibleWeatherOptions, WEATHER_TOPIC_ID } from '../domain/weather-options.js'
 import { type RegionView } from './accounts.js'
 import { getTally, type TallyResult } from './tally.js'
@@ -19,6 +20,12 @@ export interface FeedResult {
     tally: TallyResult
     myVote?: MyVoteView
     visibleOptions: string[]
+    // 온도 축 — primary 축과 독립 집계 (term-temperature-option, 2026-08-20)
+    temperature: {
+      tally: TallyResult
+      myVote?: MyVoteView
+      visibleOptions: string[]
+    }
   }
   topics: Array<{
     topic: {
@@ -82,15 +89,18 @@ export async function getFeed(db: Db, input: FeedInput): Promise<FeedResult> {
     ...openCurated.map((topic) => topic.id),
   ])
 
-  const [weatherTally, curatedEntries, wallet] = await Promise.all([
-    getTally(db, {
-      ...tallyBase,
-      topicId: weatherTopic.id,
-      kind: weatherTopic.kind,
-      topicOptions: weatherTopic.options,
-      // votes.ts의 저장 경로와 같은 분기 — regional 전제가 어긋나면 집계가 조용히 0이 된다
-      regionCode: weatherTopic.regional ? region.code : null,
-    }),
+  const weatherTallyBase = {
+    ...tallyBase,
+    topicId: weatherTopic.id,
+    kind: weatherTopic.kind,
+    topicOptions: weatherTopic.options,
+    // votes.ts의 저장 경로와 같은 분기 — regional 전제가 어긋나면 집계가 조용히 0이 된다
+    regionCode: weatherTopic.regional ? region.code : null,
+  }
+
+  const [weatherTally, temperatureTally, curatedEntries, wallet] = await Promise.all([
+    getTally(db, weatherTallyBase),
+    getTally(db, { ...weatherTallyBase, axis: 'temperature' as const }),
     Promise.all(
       openCurated.map(async (topic): Promise<FeedResult['topics'][number]> => {
         const topicView = {
@@ -111,14 +121,15 @@ export async function getFeed(db: Db, input: FeedInput): Promise<FeedResult> {
           topicOptions: topic.options,
           regionCode: topic.regional ? region.code : null,
         })
-        const myVote = myVotes.get(topic.id)
+        const myVote = myVotes.get(`${topic.id}:primary`)
         return myVote ? { topic: topicView, tally, myVote } : { topic: topicView, tally }
       }),
     ),
     getWallet(db, input.accountId, input.now, input.dailyCreditCap),
   ])
 
-  const weatherMyVote = myVotes.get(WEATHER_TOPIC_ID)
+  const weatherMyVote = myVotes.get(`${WEATHER_TOPIC_ID}:primary`)
+  const temperatureMyVote = myVotes.get(`${WEATHER_TOPIC_ID}:temperature`)
 
   return {
     region: {
@@ -131,6 +142,11 @@ export async function getFeed(db: Db, input: FeedInput): Promise<FeedResult> {
       tally: weatherTally,
       ...(weatherMyVote && { myVote: weatherMyVote }),
       visibleOptions: visibleWeatherOptions(input.now).map((option) => option.value),
+      temperature: {
+        tally: temperatureTally,
+        ...(temperatureMyVote && { myVote: temperatureMyVote }),
+        visibleOptions: TEMPERATURE_OPTIONS.map((option) => option.value),
+      },
     },
     topics: curatedEntries,
     wallet,
@@ -146,12 +162,18 @@ async function getMyVotes(
     return new Map()
   }
   const rows = await db
-    .select({ topicId: votes.topicId, optionValue: votes.optionValue, castAt: votes.castAt })
+    .select({
+      topicId: votes.topicId,
+      axis: votes.axis,
+      optionValue: votes.optionValue,
+      castAt: votes.castAt,
+    })
     .from(votes)
     .where(and(eq(votes.accountId, accountId), inArray(votes.topicId, topicIds)))
+  // 날씨 주제는 축당 표가 따로 있으므로 (주제, 축) 키로 구분한다
   return new Map(
     rows.map((row) => [
-      row.topicId,
+      `${row.topicId}:${row.axis}`,
       { optionValue: row.optionValue, castAt: row.castAt.toISOString() },
     ]),
   )

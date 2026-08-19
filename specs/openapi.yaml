@@ -127,10 +127,11 @@ paths:
       tags: [vote]
       summary: 투표 제출 — UPSERT (action-vote-cast)
       description: >
-        (계정, 주제)당 유효 표는 항상 1개 (rule-revote-replace). 재투표는 기존 표를 교체하며
-        크레딧 이벤트를 만들지 않는다. 날씨 주제 최초 투표는 +1 크레딧 (일 3회 상한,
-        상한 도달 시에도 투표는 허용하고 크레딧만 미지급 — rule-credit-grant).
-        PUT인 이유: 재투표=교체 시맨틱을 HTTP 메서드로 표현.
+        (계정, 주제, 축)당 유효 표는 항상 1개 (rule-revote-replace). 축은 서버가 optionValue로
+        추론한다 — 날씨 주제에서 온도 4종 값이면 temperature, 아니면 primary (2026-08-20 온도 축 도입).
+        재투표는 같은 축의 기존 표를 교체하며 크레딧 이벤트를 만들지 않는다. 날씨 주제의 축별
+        신선한 신호는 +1 크레딧 (일 3회 상한, 상한 도달 시에도 투표는 허용하고 크레딧만
+        미지급 — rule-credit-grant). PUT인 이유: 재투표=교체 시맨틱을 HTTP 메서드로 표현.
       parameters:
         - name: topicId
           in: path
@@ -163,7 +164,11 @@ paths:
                   wallet: { $ref: "#/components/schemas/Wallet" }
                   tally:
                     $ref: "#/components/schemas/Tally"
-                    description: 반영 직후 집계 — 클라이언트 추가 조회 불필요
+                    description: 반영 직후 해당 축의 집계 — 클라이언트 추가 조회 불필요
+                  axis:
+                    type: string
+                    enum: [primary, temperature]
+                    description: 이 표가 반영된 축 (2026-08-20 추가) — 클라이언트는 이 값으로 갱신할 화면 영역을 고른다
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404":
           description: TOPIC_NOT_FOUND
@@ -207,7 +212,7 @@ paths:
                   region: { $ref: "#/components/schemas/Region" }
                   weather:
                     type: object
-                    required: [tally, visibleOptions]
+                    required: [tally, visibleOptions, temperature]
                     properties:
                       tally: { $ref: "#/components/schemas/Tally" }
                       myVote: { $ref: "#/components/schemas/MyVote" }
@@ -215,6 +220,16 @@ paths:
                         type: array
                         items: { $ref: "#/components/schemas/WeatherOption" }
                         description: 이번 달 노출 선택지 (term-weather-option 월 매핑, 서버 KST 기준)
+                      temperature:
+                        type: object
+                        description: 온도 축 (term-temperature-option, 2026-08-20 추가) — 집계·내 표·표본 판정이 primary 축과 독립
+                        required: [tally, visibleOptions]
+                        properties:
+                          tally: { $ref: "#/components/schemas/Tally" }
+                          myVote: { $ref: "#/components/schemas/MyVote" }
+                          visibleOptions:
+                            type: array
+                            items: { $ref: "#/components/schemas/TemperatureOption" }
                   topics:
                     type: array
                     description: 활성 큐레이션 주제 + 각 집계
@@ -283,8 +298,13 @@ components:
 
     WeatherOption:
       type: string
-      description: 날씨 선택지 6종 (term-weather-option). snow는 11~3월만 노출
+      description: 날씨 선택지 6종 — primary 축 (term-weather-option). snow는 11~3월만 노출
       enum: [sunny, cloudy, rain, wind, fog, snow]
+
+    TemperatureOption:
+      type: string
+      description: 온도 축 선택지 4종, 상시 노출 (term-temperature-option). 날씨 주제 전용 두 번째 축
+      enum: [hot, warm, cool, cold]
 
     Region:
       type: object

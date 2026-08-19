@@ -24,6 +24,8 @@ export const creditReasonEnum = pgEnum('credit_reason', [
   'topic_vote_cost',
   'ops_adjustment',
 ])
+// term-temperature-option — 날씨 주제의 2축: primary(기본 선택지) / temperature(온도)
+export const voteAxisEnum = pgEnum('vote_axis', ['primary', 'temperature'])
 
 // entity-region — 지역 마스터. 카카오 판별 결과로 lazy upsert되어 채워진다
 export const regions = pgTable('regions', {
@@ -71,8 +73,8 @@ export const topics = pgTable('topics', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-// entity-vote — 이력이 아닌 현재 상태 레코드. (account, topic) 복합 PK가
-// rule-revote-replace("유효 표는 항상 1개")의 물리적 강제 장치
+// entity-vote — 이력이 아닌 현재 상태 레코드. (account, topic, axis) 복합 PK가
+// rule-revote-replace("한 축의 유효 표는 항상 1개")의 물리적 강제 장치
 export const votes = pgTable(
   'votes',
   {
@@ -82,13 +84,14 @@ export const votes = pgTable(
     topicId: text('topic_id')
       .notNull()
       .references(() => topics.id),
+    axis: voteAxisEnum('axis').notNull().default('primary'),
     optionValue: text('option_value').notNull(),
     regionCode: text('region_code').references(() => regions.code),
     castAt: timestamp('cast_at', { withTimezone: true }).notNull().defaultNow(),
     firstCastAt: timestamp('first_cast_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    primaryKey({ columns: [table.accountId, table.topicId] }),
+    primaryKey({ columns: [table.accountId, table.topicId, table.axis] }),
     // 슬라이딩 윈도우 집계(rule-sliding-window-tally)의 스캔 경로
     index('votes_tally_idx').on(table.topicId, table.regionCode, table.castAt),
   ],

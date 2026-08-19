@@ -180,6 +180,75 @@ describe('날씨 투표 (action-vote-cast + rule-revote-replace + rule-credit-gr
   })
 })
 
+describe('온도 축 (term-temperature-option)', () => {
+  it('온도 투표는 temperature 축에 반영되고 날씨 축과 독립이다', async () => {
+    const { headers } = await resolvedAccount()
+
+    const weather = await castWeatherVote(headers, 'rain')
+    expect(weather.statusCode).toBe(200)
+    expect(weather.json().axis).toBe('primary')
+
+    const temp = await castWeatherVote(headers, 'hot')
+    expect(temp.statusCode).toBe(200)
+    expect(temp.json().axis).toBe('temperature')
+    // 온도 축 tally는 4종 키만 갖고, 날씨 표는 섞이지 않는다
+    expect(temp.json().tally.counts).toEqual({ hot: 1, warm: 0, cool: 0, cold: 0 })
+    expect(temp.json().tally.counts.rain).toBeUndefined()
+  })
+
+  it('축별 신선 신호는 각각 +1 크레딧 (날씨+온도 첫 투표 = +2)', async () => {
+    const { headers } = await resolvedAccount()
+
+    const weather = await castWeatherVote(headers, 'sunny')
+    expect(weather.json().wallet.balance).toBe(1)
+    const temp = await castWeatherVote(headers, 'cold')
+    expect(temp.json().wallet.balance).toBe(2)
+
+    // 같은 축 윈도우 내 재투표는 교체만, 미지급 (rule-revote-replace 축 단위)
+    const revote = await castWeatherVote(headers, 'warm')
+    expect(revote.json().wallet.balance).toBe(2)
+    expect(revote.json().tally.counts.cold).toBe(0)
+    expect(revote.json().tally.counts.warm).toBe(1)
+  })
+
+  it('피드는 weather.temperature 섹션을 독립 집계로 반환한다', async () => {
+    const { headers } = await resolvedAccount()
+    await castWeatherVote(headers, 'rain')
+    await castWeatherVote(headers, 'hot')
+
+    const response = await ctx.app.inject({ method: 'GET', url: '/v1/feed', headers })
+    const weather = response.json().weather
+    expect(weather.myVote.optionValue).toBe('rain')
+    expect(weather.temperature.myVote.optionValue).toBe('hot')
+    expect(weather.temperature.visibleOptions).toEqual(['hot', 'warm', 'cool', 'cold'])
+    // 같은 지역을 쓰는 다른 테스트의 표가 윈도우에 있을 수 있어 하한만 단정
+    expect(weather.temperature.tally.counts.hot).toBeGreaterThanOrEqual(1)
+    expect(weather.tally.counts.hot).toBeUndefined()
+  })
+
+  it('큐레이션 주제의 온도 값은 축 추론 없이 INVALID_OPTION', async () => {
+    const { headers } = await resolvedAccount()
+    await castWeatherVote(headers, 'sunny') // 크레딧 확보
+    await ctx.db.insert(topics).values({
+      id: 'axis-scope-topic',
+      title: '축 스코프 검증',
+      kind: 'curated',
+      status: 'active',
+      options: [{ value: 'a', label: 'A' }],
+      regional: false,
+      creditCost: 1,
+    })
+    const response = await ctx.app.inject({
+      method: 'PUT',
+      url: '/v1/topics/axis-scope-topic/votes',
+      headers,
+      payload: { optionValue: 'hot' },
+    })
+    expect(response.statusCode).toBe(422)
+    expect(response.json().token).toBe('INVALID_OPTION')
+  })
+})
+
 describe('집계 (rule-sliding-window-tally + rule-min-sample-display)', () => {
   it('5표 미만은 sampleSufficient=false, 5표부터 1위가 공개된다', async () => {
     const accounts = await Promise.all(

@@ -5,3 +5,8 @@ dist/
 .env
 .env.*
 PLAN/
+
+# iOS — Dadeul.xcodeproj는 XcodeGen(project.yml)으로 생성한다
+apps/ios/*.xcodeproj
+xcuserdata/
+DerivedData/
