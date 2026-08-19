@@ -5,6 +5,17 @@ options:
     iOS: "17.0"
   createIntermediateGroups: true
 
+packages:
+  swift-openapi-generator:
+    url: https://github.com/apple/swift-openapi-generator
+    from: 1.6.0
+  swift-openapi-runtime:
+    url: https://github.com/apple/swift-openapi-runtime
+    from: 1.7.0
+  swift-openapi-urlsession:
+    url: https://github.com/apple/swift-openapi-urlsession
+    from: 1.0.0
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -36,6 +47,13 @@ targets:
           - $(AppIdentifierPrefix)app.dadeul.shared
     dependencies:
       - target: DadeulWidget
+      - package: swift-openapi-runtime
+        product: OpenAPIRuntime
+      - package: swift-openapi-urlsession
+        product: OpenAPIURLSession
+    buildToolPlugins:
+      - plugin: OpenAPIGenerator
+        package: swift-openapi-generator
 
   DadeulWidget:
     type: app-extension
