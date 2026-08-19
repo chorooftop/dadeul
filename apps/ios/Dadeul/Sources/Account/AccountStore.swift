@@ -16,7 +16,7 @@ final class AccountStore {
 
     private(set) var state: State = .idle
     /// 서버가 캐시해 둔 마지막 판별 지역 (판별 이력 없으면 nil)
-    private(set) var cachedRegionName: String?
+    private(set) var cachedRegion: Components.Schemas.Region?
 
     func bootstrap() async {
         state = .bootstrapping
@@ -32,7 +32,7 @@ final class AccountStore {
             try KeychainStore.write(payload.accessToken, for: .accessToken)
             try KeychainStore.write(payload.accountId, for: .accountId)
 
-            cachedRegionName = payload.region?.name
+            cachedRegion = payload.region
             state = .ready(accountId: payload.accountId, restored: !payload.created)
         } catch {
             state = .failed(message: "계정 연결에 실패했어요 — 로컬 API 실행 여부를 확인하세요 (\(error))")
