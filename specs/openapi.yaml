@@ -212,7 +212,7 @@ paths:
                   region: { $ref: "#/components/schemas/Region" }
                   weather:
                     type: object
-                    required: [tally, visibleOptions]
+                    required: [tally, visibleOptions, temperature]
                     properties:
                       tally: { $ref: "#/components/schemas/Tally" }
                       myVote: { $ref: "#/components/schemas/MyVote" }
