@@ -15,7 +15,7 @@ struct FeedTimelineProvider: TimelineProvider {
     static let placeholderEntry = FeedEntry(
         date: .now,
         regionName: "우리 동네",
-        topOptionLabel: "☀️ 맑음",
+        topOptionLabel: "맑음",
         topOptionRatio: 0
     )
 

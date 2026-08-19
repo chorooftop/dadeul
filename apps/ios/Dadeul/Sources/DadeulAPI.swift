@@ -9,6 +9,8 @@ enum DadeulAPI {
     static func makeLocalClient() throws -> Client {
         Client(
             serverURL: try Servers.Server2.url(),
+            // 서버 date-time은 밀리초 포함 ISO 8601 (예: 2026-08-19T15:07:54.069Z)
+            configuration: .init(dateTranscoder: .iso8601WithFractionalSeconds),
             transport: URLSessionTransport(),
             middlewares: [BearerAuthMiddleware()]
         )

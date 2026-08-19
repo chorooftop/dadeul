@@ -5,6 +5,24 @@ struct ContentView: View {
     @State private var region = RegionStore()
 
     var body: some View {
+        Group {
+            if case .resolved(let resolved) = region.state {
+                HomeView(region: resolved) {
+                    Task { await region.determineByLocation() }
+                }
+            } else {
+                onboarding
+            }
+        }
+        .task {
+            await account.bootstrap()
+            if case .ready = account.state {
+                await region.start(serverCachedRegion: account.cachedRegion)
+            }
+        }
+    }
+
+    private var onboarding: some View {
         VStack(spacing: 16) {
             Text("다들")
                 .font(.largeTitle.bold())
@@ -18,12 +36,6 @@ struct ContentView: View {
                 .frame(maxHeight: 320)
         }
         .padding()
-        .task {
-            await account.bootstrap()
-            if case .ready = account.state {
-                await region.start(serverCachedRegion: account.cachedRegion)
-            }
-        }
     }
 
     @ViewBuilder
@@ -47,18 +59,9 @@ struct ContentView: View {
             EmptyView()
         case .determining:
             ProgressView("내 동네 찾는 중…")
-        case .resolved(let resolved):
-            VStack(spacing: 4) {
-                Label(resolved.name, systemImage: "mappin.and.ellipse")
-                    .font(.title3.bold())
-                Text(resolved.fullName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button("다른 동네로 바꾸기") {
-                    Task { await region.determineByLocation() }
-                }
-                .font(.caption)
-            }
+        case .resolved:
+            // 확정되면 body가 HomeView로 전환된다
+            EmptyView()
         case .manualSelection(let regions, let reason):
             VStack(spacing: 8) {
                 Text(reason)
