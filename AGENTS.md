@@ -6,7 +6,7 @@
 
 - `specs/` — TOM 명세 (atoms + specs) **+ `specs/openapi.yaml`** (API 계약의 단일 진실)
 - `apps/api/` — Fastify + PostgreSQL 백엔드 (`@dadeul/api`, npm workspace)
-- `apps/ios/` — Swift + WidgetKit _(not created yet)_
+- `apps/ios/` — SwiftUI 앱 + WidgetKit 익스텐션. **XcodeGen** 사용 — `.xcodeproj`는 커밋하지 않고 `apps/ios/project.yml`이 진실, `xcodegen generate`로 생성. 번들 ID `app.dadeul.ios`, 최소 iOS 17, App Group `group.app.dadeul` (iOS CI는 없음 — 로컬 빌드로 검증)
 - `apps/android/` — Kotlin + Glance _(not created yet)_
 - `tools/tom/` — TOM CLI
 - CI는 경로 필터로 분리: `validate.yml`(specs/tools), `api.yml`(apps/api + openapi)

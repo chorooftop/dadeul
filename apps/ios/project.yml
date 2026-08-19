@@ -1,0 +1,75 @@
+name: Dadeul
+options:
+  bundleIdPrefix: app.dadeul
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    CODE_SIGN_STYLE: Automatic
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+
+targets:
+  Dadeul:
+    type: application
+    platform: iOS
+    sources:
+      - Dadeul/Sources
+      - Shared/Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dadeul.ios
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 다들
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 우리 동네(시군구) 투표를 보여주기 위해 위치를 사용해요. 시군구 단위만 사용하고 정확한 위치는 저장하지 않아요.
+    entitlements:
+      path: Dadeul/Dadeul.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.app.dadeul
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)app.dadeul.shared
+    dependencies:
+      - target: DadeulWidget
+
+  DadeulWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - DadeulWidget/Sources
+      - Shared/Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dadeul.ios.widget
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 다들
+    info:
+      path: DadeulWidget/Info.plist
+      properties:
+        CFBundleDisplayName: 다들
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: DadeulWidget/DadeulWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.app.dadeul
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)app.dadeul.shared
+
+schemes:
+  Dadeul:
+    build:
+      targets:
+        Dadeul: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
