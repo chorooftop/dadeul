@@ -62,6 +62,10 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("지금 날씨 어때?")
                 .font(.headline)
+            // 체감 우세 규칙 안내 — 단일 선택 프레임 (term-weather-option)
+            Text("가장 크게 느껴지는 날씨 하나를 골라 주세요")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
 
             // 노출 선택지는 서버 visibleOptions만 신뢰 (term-weather-option)
             HStack(spacing: 8) {
