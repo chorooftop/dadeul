@@ -2,7 +2,7 @@ name: validate
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - "specs/**"
       - "tools/**"
