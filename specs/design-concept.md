@@ -1,7 +1,11 @@
 # 다들 디자인 컨셉
 
 > 2026-08-20 사용자 인터뷰로 확정. 앱·위젯 UI 작업은 이 문서를 기준으로 한다.
-> 시안 원본: Figma (chorooftop@gmail.com 계정) — PLAN/2026-08-20-design-pass.md 참조.
+>
+> **시안 원본 (단일 진실)**: https://www.figma.com/design/pEZJrbmy4I4fq3iPIuExlg — "다들 — 디자인 시안",
+> chorooftop@gmail.com 계정 drafts (개인 프로젝트 — 회사 계정 사용 금지). 페이지 구성:
+> `00 Foundation`(토큰·타이포) / `01 위젯`(small 충족·미달, medium — 온도 병기 포함) / `02 홈`(2축 투표 카드).
+> 시안 수정은 이 문서의 결정과 동기화한다.
 
 ## 방향 (확정 결정)
 
