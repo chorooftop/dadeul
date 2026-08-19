@@ -2,7 +2,7 @@ name: api
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - "apps/api/**"
       - "specs/openapi.yaml"
