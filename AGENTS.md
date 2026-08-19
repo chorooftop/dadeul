@@ -10,6 +10,7 @@
 - `apps/android/` — Kotlin + Glance _(not created yet)_
 - `tools/tom/` — TOM CLI
 - CI는 경로 필터로 분리: `validate.yml`(specs/tools), `api.yml`(apps/api + openapi)
+- **커밋·브랜치·PR 규칙은 `specs/release-process.md`가 단일 기준** — 커밋은 논리 단위로 분할, 작업은 develop에 먼저 push, main 머지는 PR로만(형식은 `.github/PULL_REQUEST_TEMPLATE.md` 준수)
 
 ```bash
 npm run dev:api      # API 개발 서버
