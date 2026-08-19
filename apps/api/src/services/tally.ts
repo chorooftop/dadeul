@@ -1,6 +1,7 @@
 import { and, count, eq, gte, isNull, type SQL } from 'drizzle-orm'
 import { type Db } from '../db/client.js'
 import { votes, type TopicOption } from '../db/schema.js'
+import { TEMPERATURE_OPTIONS, type VoteAxis } from '../domain/temperature-options.js'
 import { WEATHER_OPTIONS } from '../domain/weather-options.js'
 import { windowStart } from '../domain/time.js'
 
@@ -20,6 +21,8 @@ interface TallyInput {
   kind: 'weather' | 'curated'
   topicOptions: TopicOption[]
   regionCode: string | null
+  /// 집계 단위는 (주제, 축) — entity-tally. 미지정 시 primary
+  axis?: VoteAxis
   now: Date
   windowHours: number
   minSampleThreshold: number
@@ -30,8 +33,10 @@ interface TallyInput {
 // - curated: 기간제 누적 — 윈도우·최소표본 미적용 (투표 자체가 open 기간에만 가능)
 // MVP는 조회 시점 실시간 집계, 스냅샷 테이블 없음 (entity-tally 결정 기록)
 export async function getTally(db: Db, input: TallyInput): Promise<TallyResult> {
+  const axis = input.axis ?? 'primary'
   const conditions: SQL[] = [
     eq(votes.topicId, input.topicId),
+    eq(votes.axis, axis),
     input.regionCode === null ? isNull(votes.regionCode) : eq(votes.regionCode, input.regionCode),
   ]
   if (input.kind === 'weather') {
@@ -48,7 +53,9 @@ export async function getTally(db: Db, input: TallyInput): Promise<TallyResult> 
   // 정의에 없는 선택지의 표(운영자가 선택지를 뺀 경우)는 분모·분자 모두에서 제외해 비율 왜곡을 막는다
   const allValues =
     input.kind === 'weather'
-      ? WEATHER_OPTIONS.map((option) => option.value)
+      ? (axis === 'temperature' ? TEMPERATURE_OPTIONS : WEATHER_OPTIONS).map(
+          (option) => option.value,
+        )
       : input.topicOptions.map((option) => option.value)
   const counts = Object.fromEntries(allValues.map((value) => [value, 0]))
   for (const row of rows) {

@@ -4,6 +4,7 @@ import { accounts, creditLedger, regions, topics, votes } from '../db/schema.js'
 import { AppError } from '../domain/errors.js'
 import { kstDayStart, windowStart } from '../domain/time.js'
 import { isTopicOpen } from '../domain/topics.js'
+import { resolveWeatherAxis, type VoteAxis } from '../domain/temperature-options.js'
 import { isSubmittableWeatherOption } from '../domain/weather-options.js'
 import { getTally, type TallyResult } from './tally.js'
 import { getWallet, type WalletView } from './wallet.js'
@@ -23,6 +24,8 @@ export interface CastVoteResult {
   vote: { optionValue: string; castAt: string }
   wallet: WalletView
   tally: TallyResult
+  /// 이 표가 반영된 축 — 클라이언트가 갱신할 화면 영역 선택용 (2026-08-20 온도 축)
+  axis: VoteAxis
 }
 
 // action-vote-cast: 검증 → UPSERT(rule-revote-replace) → 크레딧(rule-credit-grant) → 집계.
@@ -42,9 +45,11 @@ export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteRe
       throw new AppError('TOPIC_CLOSED', 409, `topic closed: ${topicId}`)
     }
 
+    // 축 추론은 날씨 주제 스코프에서만 — 큐레이션은 항상 primary (term-temperature-option)
+    const axis: VoteAxis = topic.kind === 'weather' ? resolveWeatherAxis(optionValue) : 'primary'
     const validOption =
       topic.kind === 'weather'
-        ? isSubmittableWeatherOption(optionValue, now)
+        ? axis === 'temperature' || isSubmittableWeatherOption(optionValue, now)
         : topic.options.some((option) => option.value === optionValue)
     if (!validOption) {
       throw new AppError('INVALID_OPTION', 422, `invalid option: ${optionValue}`)
@@ -76,20 +81,26 @@ export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteRe
       throw new AppError('UNAUTHORIZED', 401, `account not found: ${accountId}`)
     }
 
-    const [existing] = await tx
-      .select({ castAt: votes.castAt })
-      .from(votes)
-      .where(and(eq(votes.accountId, accountId), eq(votes.topicId, topicId)))
+    // 교체 단위는 (계정, 주제, 축) — rule-revote-replace
+    const voteKey = and(
+      eq(votes.accountId, accountId),
+      eq(votes.topicId, topicId),
+      eq(votes.axis, axis),
+    )
+    const [existing] = await tx.select({ castAt: votes.castAt }).from(votes).where(voteKey)
 
     if (existing) {
-      await tx
-        .update(votes)
-        .set({ optionValue, regionCode, castAt: now })
-        .where(and(eq(votes.accountId, accountId), eq(votes.topicId, topicId)))
+      await tx.update(votes).set({ optionValue, regionCode, castAt: now }).where(voteKey)
     } else {
-      await tx
-        .insert(votes)
-        .values({ accountId, topicId, optionValue, regionCode, castAt: now, firstCastAt: now })
+      await tx.insert(votes).values({
+        accountId,
+        topicId,
+        axis,
+        optionValue,
+        regionCode,
+        castAt: now,
+        firstCastAt: now,
+      })
     }
 
     if (topic.kind === 'weather') {
@@ -107,6 +118,7 @@ export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteRe
         kind: topic.kind,
         topicOptions: topic.options,
         regionCode,
+        axis,
         now,
         windowHours: input.windowHours,
         minSampleThreshold: input.minSampleThreshold,
@@ -114,7 +126,7 @@ export async function castVote(db: Db, input: CastVoteInput): Promise<CastVoteRe
       getWallet(tx, accountId, now, input.dailyCreditCap),
     ])
 
-    return { vote: { optionValue, castAt: now.toISOString() }, wallet, tally }
+    return { vote: { optionValue, castAt: now.toISOString() }, wallet, tally, axis }
   })
 }
 
