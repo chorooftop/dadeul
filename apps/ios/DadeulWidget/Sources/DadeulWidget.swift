@@ -45,7 +45,7 @@ struct DadeulWidgetEntryView: View {
                 .foregroundStyle(.secondary)
             Text(entry.topOptionLabel)
                 .font(.headline)
-            Text("우리 동네 첫 투표를 기다려요")
+            Text("현재 위치의 첫 투표를 기다려요")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

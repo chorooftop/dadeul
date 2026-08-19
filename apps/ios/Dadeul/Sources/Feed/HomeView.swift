@@ -137,8 +137,8 @@ struct HomeView: View {
         } else {
             Label(
                 tally.totalVotes == 0
-                    ? "우리 동네 첫 투표를 기다려요"
-                    : "우리 동네 첫 투표를 기다려요 · 지금까지 \(tally.totalVotes)명",
+                    ? "현재 위치의 첫 투표를 기다려요"
+                    : "현재 위치의 첫 투표를 기다려요 · 지금까지 \(tally.totalVotes)명",
                 systemImage: "sparkles"
             )
             .font(.footnote)
