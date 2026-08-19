@@ -28,3 +28,26 @@ enum WeatherOptionDisplay {
         }
     }
 }
+
+/// 온도 축 4종의 표시명·심볼 (term-temperature-option). 상시 노출, 서버 visibleOptions 신뢰.
+enum TemperatureOptionDisplay {
+    static func label(for value: String) -> String {
+        switch value {
+        case "hot": "더움"
+        case "warm": "따뜻함"
+        case "cool": "시원함"
+        case "cold": "추움"
+        default: value
+        }
+    }
+
+    static func symbol(for value: String) -> String {
+        switch value {
+        case "hot": "thermometer.sun.fill"
+        case "warm": "thermometer.medium"
+        case "cool": "thermometer.low"
+        case "cold": "thermometer.snowflake"
+        default: "questionmark.circle"
+        }
+    }
+}

@@ -62,8 +62,8 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("지금 날씨 어때?")
                 .font(.headline)
-            // 체감 우세 규칙 안내 — 단일 선택 프레임 (term-weather-option)
-            Text("가장 크게 느껴지는 날씨 하나를 골라 주세요")
+            // 2축 안내 — 축별 1개 선택 (term-weather-option, term-temperature-option)
+            Text("날씨 하나, 온도 하나 — 느껴지는 대로 골라 주세요")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
@@ -76,6 +76,20 @@ struct HomeView: View {
 
             if let tally = feed.weatherTally {
                 tallyView(tally)
+            }
+
+            Divider()
+
+            // 온도 축 — 날씨 축과 독립 집계 (term-temperature-option)
+            Text("체감 온도는 어때요?")
+                .font(.subheadline.bold())
+            HStack(spacing: 8) {
+                ForEach(feed.temperatureOptions, id: \.rawValue) { option in
+                    temperatureOptionButton(option)
+                }
+            }
+            if let tally = feed.temperatureTally {
+                temperatureTallyView(tally)
             }
 
             if feed.weatherMyVote != nil {
@@ -112,6 +126,60 @@ struct HomeView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    private func temperatureOptionButton(_ option: Components.Schemas.TemperatureOption) -> some View {
+        let isMyVote = feed.temperatureMyVote?.optionValue == option.rawValue
+        return Button {
+            Task { await feed.castTemperatureVote(option) }
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: TemperatureOptionDisplay.symbol(for: option.rawValue))
+                    .font(.body)
+                Text(TemperatureOptionDisplay.label(for: option.rawValue))
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                isMyVote ? AnyShapeStyle(.tint.opacity(0.2)) : AnyShapeStyle(.fill.tertiary),
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isMyVote ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // 온도 축 집계 — 표본 판정도 축별 (rule-min-sample-display)
+    @ViewBuilder
+    private func temperatureTallyView(_ tally: Components.Schemas.Tally) -> some View {
+        if tally.sampleSufficient {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(feed.temperatureOptions, id: \.rawValue) { option in
+                    let count = tally.counts.additionalProperties[option.rawValue] ?? 0
+                    let ratio = tally.totalVotes > 0 ? Double(count) / Double(tally.totalVotes) : 0
+                    HStack(spacing: 8) {
+                        Image(systemName: TemperatureOptionDisplay.symbol(for: option.rawValue))
+                            .font(.caption)
+                            .frame(width: 20)
+                        ProgressView(value: ratio)
+                        Text(ratio.formatted(.percent.precision(.fractionLength(0))))
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 42, alignment: .trailing)
+                    }
+                }
+                Text("최근 2시간 · \(tally.totalVotes)명 참여")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        } else if tally.totalVotes > 0 {
+            Text("온도 투표 \(tally.totalVotes)명 — 5명부터 비율이 열려요")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - 집계

@@ -31,6 +31,10 @@ final class FeedStore {
     private(set) var weatherTally: Tally?
     private(set) var weatherMyVote: MyVote?
     private(set) var visibleOptions: [WeatherOption] = []
+    // 온도 축 — primary 축과 독립 집계 (term-temperature-option)
+    private(set) var temperatureTally: Tally?
+    private(set) var temperatureMyVote: MyVote?
+    private(set) var temperatureOptions: [Components.Schemas.TemperatureOption] = []
     private(set) var topics: [TopicEntry] = []
     private(set) var wallet: Wallet?
     /// 투표 실패 안내 (크레딧 부족·마감 등) — 다음 성공 시 지워진다
@@ -48,6 +52,9 @@ final class FeedStore {
             weatherTally = payload.weather.tally
             weatherMyVote = payload.weather.myVote
             visibleOptions = payload.weather.visibleOptions
+            temperatureTally = payload.weather.temperature.tally
+            temperatureMyVote = payload.weather.temperature.myVote
+            temperatureOptions = payload.weather.temperature.visibleOptions
             topics = payload.topics.map { entry in
                 TopicEntry(topic: entry.topic, tally: entry.tally, myVote: entry.myVote)
             }
@@ -58,12 +65,21 @@ final class FeedStore {
         }
     }
 
-    /// 날씨 투표 — 재투표는 교체이며 크레딧이 지급되지 않는다 (rule-revote-replace).
+    /// 날씨 투표 — 재투표는 같은 축 내 교체이며 크레딧이 지급되지 않는다 (rule-revote-replace).
     func castWeatherVote(_ option: WeatherOption) async {
         guard let regionCode else { return }
         await cast(topicId: "weather", optionValue: option.rawValue, regionCode: regionCode) { result in
             self.weatherTally = result.tally
             self.weatherMyVote = result.vote
+        }
+    }
+
+    /// 온도 투표 — temperature 축, 날씨 축과 독립 (term-temperature-option).
+    func castTemperatureVote(_ option: Components.Schemas.TemperatureOption) async {
+        guard let regionCode else { return }
+        await cast(topicId: "weather", optionValue: option.rawValue, regionCode: regionCode) { result in
+            self.temperatureTally = result.tally
+            self.temperatureMyVote = result.vote
         }
     }
 
