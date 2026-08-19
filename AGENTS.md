@@ -41,6 +41,7 @@ npm run test:tom     # TOM CLI 회귀 테스트
 | 주제 생성 | 운영자 큐레이션 (유저 생성 없음) | `entity-topic` |
 | 인증 | 익명 기기 계정 (가입 없음), 재설치 시 플랫폼 복원 | `entity-device-account` |
 | 날씨 선택지 | 6종 풀 + 월 기반 자동 가변 (서버 큐레이션 없음) | `term-weather-option` |
+| 온도 축 | 날씨 주제에 온도 4종(더움·따뜻함·시원함·추움) 별도 축 — 축별 1인 1표·독립 집계, 사용자는 최대 2개 선택 | `term-temperature-option` |
 | 최소 표본 | 5표 미만 시 비율 숨김 + 참여 유도 | `rule-min-sample-display` |
 | 위젯 갱신 | 30분 주기 + 내 지역 1위 변경 시에만 silent push | `spec-weather-vote-widget` |
 | 오픈 지역 | 전국 오픈 + 밀도 UX (지역 차단 없음) | `spec-weather-vote-widget` |
