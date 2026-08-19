@@ -45,7 +45,7 @@ Figma 시안에서 Pretendard를 못 쓰는 환경이면 Noto Sans KR로 대체�
 - **개표 현황 스타일** (네이버 선거 UI 참고): 순위 뱃지(①②③) + 라벨 + 득표 바 + 굵은 % 를 행으로 쌓는다. 1위 행은 `sky` 바·수치 + `sky-tint` 하이라이트, 2위 이하는 회색 계열
 - **분포가 주인공**: small도 상위 2~3개 옵션을 보여준다. medium은 4개 + 득표수("n표") 병기
 - 지역명 + 라이브 닷은 상단 고정, "n분 전"은 하단 고정 (낡음 정직 표기 — spec-weather-vote-widget Core Requirement 3)
-- 표본 미달: 바 대신 "우리 동네 첫 투표를 기다려요" + `amber` 포인트 (rule-min-sample-display)
+- 표본 미달: 바 대신 "현재 위치의 첫 투표를 기다려요" + `amber` 포인트 (rule-min-sample-display)
 - 아이콘은 SF Symbol만 사용 — 이모지 금지 (렌더링 환경 의존 제거)
 - 위젯 콘텐츠는 feed 스냅샷만으로 렌더 가능해야 한다 (지역명·counts·totalVotes·computedAt·sampleSufficient)
 
