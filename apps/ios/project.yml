@@ -31,6 +31,8 @@ targets:
     sources:
       - Dadeul/Sources
       - Shared/Sources
+      - path: Shared/Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dadeul.ios
@@ -61,6 +63,8 @@ targets:
     sources:
       - DadeulWidget/Sources
       - Shared/Sources
+      - path: Shared/Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dadeul.ios.widget
