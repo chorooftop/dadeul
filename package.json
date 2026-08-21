@@ -19,6 +19,6 @@
     "test:api": "npm run test --workspace @dadeul/api"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   }
 }

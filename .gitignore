@@ -4,6 +4,7 @@ node_modules/
 dist/
 .env
 .env.*
+!apps/api/.env.example
 PLAN/
 
 # 디자인 캔버스 조립 산출물 — 소스는 design/*.dc.html + canvas.json
