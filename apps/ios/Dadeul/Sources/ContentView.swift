@@ -26,7 +26,7 @@ struct ContentView: View {
         VStack(spacing: 16) {
             Text("다들")
                 .font(.largeTitle.bold())
-            Text("투표로 결정된 지금")
+            Text("지금, 다들 어때요?")
                 .foregroundStyle(.secondary)
 
             accountStatus
