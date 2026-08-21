@@ -31,13 +31,15 @@ targets:
     sources:
       - Dadeul/Sources
       - Shared/Sources
+      - path: Shared/Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dadeul.ios
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: 다들
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 우리 동네(시군구) 투표를 보여주기 위해 위치를 사용해요. 시군구 단위만 사용하고 정확한 위치는 저장하지 않아요.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 현재 위치(시군구)의 투표를 보여주기 위해 위치를 사용해요. 시군구 단위만 사용하고 정확한 위치는 저장하지 않아요.
     entitlements:
       path: Dadeul/Dadeul.entitlements
       properties:
@@ -61,6 +63,8 @@ targets:
     sources:
       - DadeulWidget/Sources
       - Shared/Sources
+      - path: Shared/Resources
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dadeul.ios.widget

@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif; }
+    a { color: #3D7BFF; } a:hover { color: #3D7BFF; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F5F6F8; padding: 24px 24px 48px; display: flex; flex-direction: column;">
+  <div style="height: 40px;"></div>
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+      <div style="width: 96px; height: 96px; border-radius: 50%; background: #EAF1FF; display: flex; align-items: center; justify-content: center;">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#3D7BFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21s-7-5.1-7-11a7 7 0 0 1 14 0c0 5.9-7 11-7 11z"/>
+          <circle cx="12" cy="10" r="2.6"/>
+        </svg>
+      </div>
+      <div style="padding: 7px 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E8EBF0; font-size: 13px; font-weight: 700; color: #3D7BFF;">서울특별시 강남구</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;">
+      <div style="font-size: 24px; font-weight: 800; color: #17181C; line-height: 1.35;">위치는 시군구까지만<br>사용해요</div>
+      <div style="font-size: 14px; font-weight: 500; color: #6B7280; line-height: 1.55;">정확한 위치는 저장하지 않아요.<br>현재 위치(시군구)를 찾는 데만 써요</div>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 24px;">
+    <div style="display: flex; gap: 7px;">
+      <div style="width: 7px; height: 7px; border-radius: 50%; background: #E8EBF0;"></div>
+      <div style="width: 7px; height: 7px; border-radius: 50%; background: #E8EBF0;"></div>
+      <div style="width: 7px; height: 7px; border-radius: 50%; background: #3D7BFF;"></div>
+    </div>
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+      <div style="width: 100%; height: 52px; border-radius: 14px; background: #3D7BFF; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center;">시작하기</div>
+      <div style="font-size: 11px; color: #9AA1AC;">시작하면 위치 권한을 요청해요</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

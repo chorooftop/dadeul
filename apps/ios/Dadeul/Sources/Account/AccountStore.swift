@@ -35,7 +35,7 @@ final class AccountStore {
             cachedRegion = payload.region
             state = .ready(accountId: payload.accountId, restored: !payload.created)
         } catch {
-            state = .failed(message: "계정 연결에 실패했어요 — 로컬 API 실행 여부를 확인하세요 (\(error))")
+            state = .failed(message: "계정 연결에 실패했어요 — 네트워크를 확인해 주세요 (\(error))")
         }
     }
 }

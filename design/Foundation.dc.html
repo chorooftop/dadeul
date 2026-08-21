@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif; }
+    a { color: #3D7BFF; } a:hover { color: #3D7BFF; }
+  </style>
+</helmet>
+<div style="width: 960px; box-sizing: border-box; background: #F5F6F8; padding: 32px; display: flex; flex-direction: column; gap: 36px;">
+  <div style="display: flex; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #F5F6F8; border: 1px solid #E8EBF0;"></div>
+      <div style="font-size: 11px; color: #6B7280;">bg #F5F6F8</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E8EBF0;"></div>
+      <div style="font-size: 11px; color: #6B7280;">surface #FFFFFF</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #E8EBF0;"></div>
+      <div style="font-size: 11px; color: #6B7280;">stroke #E8EBF0</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #17181C;"></div>
+      <div style="font-size: 11px; color: #6B7280;">ink #17181C</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #6B7280;"></div>
+      <div style="font-size: 11px; color: #6B7280;">ink-sub #6B7280</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #9AA1AC;"></div>
+      <div style="font-size: 11px; color: #6B7280;">ink-ter #9AA1AC</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #3D7BFF;"></div>
+      <div style="font-size: 11px; color: #6B7280;">sky #3D7BFF</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #EAF1FF;"></div>
+      <div style="font-size: 11px; color: #6B7280;">sky-tint #EAF1FF</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="width: 88px; height: 64px; border-radius: 12px; background: #FFB324;"></div>
+      <div style="font-size: 11px; color: #6B7280;">amber #FFB324</div>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="font-size: 24px; font-weight: 800; color: #17181C;">강남구 — 화면 타이틀 24 ExtraBold</div>
+    <div style="font-size: 17px; font-weight: 700; color: #17181C;">카드 제목 17 Bold — 지금 날씨 어때?</div>
+    <div style="font-size: 24px; font-weight: 800; color: #3D7BFF;">1위 수치 24 ExtraBold — 60%</div>
+    <div style="font-size: 14px; font-weight: 500; color: #17181C;">본문 14 Medium — 선택지·수치</div>
+    <div style="font-size: 12px; font-weight: 400; color: #9AA1AC;">캡션 12 Regular — 5명 참여 · 12분 전</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":960,"height":460}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

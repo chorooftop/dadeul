@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif; }
+    a { color: #3D7BFF; } a:hover { color: #3D7BFF; }
+  </style>
+</helmet>
+<div style="width: 364px; height: 170px; box-sizing: border-box; background: #FFFFFF; border-radius: 24px; border: 1px solid #E8EBF0; padding: 16px; display: flex; flex-direction: column; gap: 7px;">
+  <div style="display: flex; align-items: center; gap: 5px;">
+    <div style="width: 6px; height: 6px; border-radius: 50%; background: #3D7BFF;"></div>
+    <div style="font-size: 14px; font-weight: 800; color: #17181C;">강남구</div>
+    <div style="margin-left: auto; font-size: 10px; color: #9AA1AC;">실시간 날씨 투표</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 7px; background: #EAF1FF; border-radius: 7px; padding: 3px 6px; margin: 0 -6px;">
+    <div style="width: 15px; height: 15px; border-radius: 50%; background: #3D7BFF; color: #FFFFFF; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">1</div>
+    <div style="width: 30px; font-size: 12px; font-weight: 700; color: #17181C;">맑음</div>
+    <div style="flex: 1; height: 5px; border-radius: 3px; background: #FFFFFF; overflow: hidden;"><div style="width: 60%; height: 100%; border-radius: 3px; background: #3D7BFF;"></div></div>
+    <div style="width: 34px; text-align: right; font-size: 12px; font-weight: 800; color: #3D7BFF;">60%</div>
+    <div style="width: 22px; text-align: right; font-size: 10px; color: #9AA1AC;">3표</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 7px;">
+    <div style="width: 15px; height: 15px; border-radius: 50%; background: #E8EBF0; color: #6B7280; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">2</div>
+    <div style="width: 30px; font-size: 12px; font-weight: 500; color: #17181C;">흐림</div>
+    <div style="flex: 1; height: 5px; border-radius: 3px; background: #E8EBF0; overflow: hidden;"><div style="width: 40%; height: 100%; border-radius: 3px; background: #9AA1AC;"></div></div>
+    <div style="width: 34px; text-align: right; font-size: 12px; font-weight: 700; color: #6B7280;">40%</div>
+    <div style="width: 22px; text-align: right; font-size: 10px; color: #9AA1AC;">2표</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 7px;">
+    <div style="width: 15px; height: 15px; border-radius: 50%; background: #E8EBF0; color: #6B7280; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">3</div>
+    <div style="width: 30px; font-size: 12px; font-weight: 500; color: #17181C;">바람</div>
+    <div style="flex: 1; height: 5px; border-radius: 3px; background: #E8EBF0; overflow: hidden;"><div style="width: 0%; height: 100%; border-radius: 3px; background: #9AA1AC;"></div></div>
+    <div style="width: 34px; text-align: right; font-size: 12px; font-weight: 700; color: #6B7280;">0%</div>
+    <div style="width: 22px; text-align: right; font-size: 10px; color: #9AA1AC;">0표</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 7px;">
+    <div style="width: 15px; height: 15px; border-radius: 50%; background: #E8EBF0; color: #6B7280; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">4</div>
+    <div style="width: 30px; font-size: 12px; font-weight: 500; color: #17181C;">안개</div>
+    <div style="flex: 1; height: 5px; border-radius: 3px; background: #E8EBF0; overflow: hidden;"><div style="width: 0%; height: 100%; border-radius: 3px; background: #9AA1AC;"></div></div>
+    <div style="width: 34px; text-align: right; font-size: 12px; font-weight: 700; color: #6B7280;">0%</div>
+    <div style="width: 22px; text-align: right; font-size: 10px; color: #9AA1AC;">0표</div>
+  </div>
+  <div style="margin-top: auto; display: flex; align-items: center; gap: 4px;">
+    <div style="font-size: 10px; color: #6B7280;">체감</div>
+    <div style="font-size: 11px; font-weight: 700; color: #3D7BFF;">더움 70%</div>
+    <div style="margin-left: auto; font-size: 10px; color: #9AA1AC;">온도 투표 10명</div>
+  </div>
+  <div style="font-size: 9px; color: #9AA1AC;">5명 참여 · 12분 전</div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":364,"height":170}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

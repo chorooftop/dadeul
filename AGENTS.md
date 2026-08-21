@@ -5,6 +5,7 @@
 ## 모노레포 구조
 
 - `specs/` — TOM 명세 (atoms + specs) **+ `specs/openapi.yaml`** (API 계약의 단일 진실)
+- `design/` — 디자인 시안 원본 (Claude Design 캔버스 소스 `*.dc.html` + `canvas.json`). 기준 문서는 `specs/design-concept.md`
 - `apps/api/` — Fastify + PostgreSQL 백엔드 (`@dadeul/api`, npm workspace)
 - `apps/ios/` — SwiftUI 앱 + WidgetKit 익스텐션. **XcodeGen** 사용 — `.xcodeproj`는 커밋하지 않고 `apps/ios/project.yml`이 진실, `xcodegen generate`로 생성. 번들 ID `app.dadeul.ios`, 최소 iOS 17, App Group `group.app.dadeul` (iOS CI는 없음 — 로컬 빌드로 검증)
 - `apps/android/` — Kotlin + Glance _(not created yet)_
@@ -37,7 +38,7 @@ npm run test:tom     # TOM CLI 회귀 테스트
 | 지역 단위 | 시군구, GPS 자동 매핑 | `term-region-code` |
 | 집계 방식 | 슬라이딩 윈도우 2시간 | `rule-sliding-window-tally` |
 | 재투표 | 윈도우 내 재투표 = 기존 표 갱신 (크레딧 미지급) | `rule-revote-replace` |
-| 크레딧 | 신선한 신호(신규 표 또는 윈도우 밖 재투표)당 1크레딧, 무기한, 일일 적립 상한 3 | `rule-credit-grant`, `entity-credit-wallet` |
+| 크레딧 | 신선한 신호(신규 표 또는 윈도우 밖 재투표)당 1크레딧, 무기한, 일일 적립 상한 3. **소비는 보류**(2026-08-22) — 모든 주제 creditCost=0 운영, 결과 열람·큐레이션 투표 자유 | `rule-credit-grant`, `entity-credit-wallet` |
 | 주제 생성 | 운영자 큐레이션 (유저 생성 없음) | `entity-topic` |
 | 인증 | 익명 기기 계정 (가입 없음), 재설치 시 플랫폼 복원 | `entity-device-account` |
 | 날씨 선택지 | 6종 풀 + 월 기반 자동 가변 (서버 큐레이션 없음) | `term-weather-option` |

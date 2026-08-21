@@ -6,6 +6,9 @@ dist/
 .env.*
 PLAN/
 
+# 디자인 캔버스 조립 산출물 — 소스는 design/*.dc.html + canvas.json
+design/dadeul-design.html
+
 # iOS — Dadeul.xcodeproj는 XcodeGen(project.yml)으로 생성한다
 apps/ios/*.xcodeproj
 xcuserdata/
