@@ -68,7 +68,8 @@ struct ContentView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 if regions.isEmpty {
-                    Text("아직 열린 동네가 없어요")
+                    // 전국 오픈 정책 — 목록이 비면 "닫힌 동네"가 아니라 로드 실패다
+                    Text("동네 목록을 불러오지 못했어요 — 잠시 후 다시 시도해 주세요")
                         .font(.footnote)
                         .foregroundStyle(.tertiary)
                 } else {

@@ -121,7 +121,8 @@ final class FeedStore {
             case .conflict:
                 voteErrorMessage = "마감된 주제예요"
             case .unprocessableContent:
-                voteErrorMessage = "투표를 반영하지 못했어요 — 선택지나 크레딧을 확인해 주세요"
+                // 투표는 크레딧을 소비하지 않는다 — 크레딧 언급은 오해 유발이라 제거
+                voteErrorMessage = "투표를 반영하지 못했어요 — 선택지를 다시 확인해 주세요"
             default:
                 voteErrorMessage = "투표에 실패했어요 — 잠시 후 다시 시도해 주세요"
             }

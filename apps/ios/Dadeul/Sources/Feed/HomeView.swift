@@ -134,7 +134,8 @@ struct HomeView: View {
                     Rectangle()
                         .fill(DesignToken.stroke)
                         .frame(height: 1)
-                    Text("재투표하면 표가 바뀌어요 — 크레딧은 신선한 참여에만 지급돼요")
+                    // "신선한 신호"(rule-credit-grant)는 내부 용어 — 사용자 문구로 풀어쓴다
+                    Text("표는 언제든 바꿀 수 있어요 — 크레딧은 새로 참여할 때만 적립돼요")
                         .font(DesignFont.captionSmall)
                         .foregroundStyle(DesignToken.inkTer)
                         .padding(.top, 11)
@@ -282,10 +283,11 @@ struct HomeView: View {
                 participants: "최근 2시간 · \(tally.totalVotes)명 참여"
             )
         } else {
+            // 0명일 때만 "첫 투표" — 참여가 있는데 첫 투표를 기다린다는 모순 방지
             Label(
                 tally.totalVotes == 0
                     ? "현재 위치의 첫 투표를 기다려요"
-                    : "현재 위치의 첫 투표를 기다려요 · 지금까지 \(tally.totalVotes)명",
+                    : "지금까지 \(tally.totalVotes)명 참여 — 5명이 모이면 결과가 보여요",
                 systemImage: "sparkles"
             )
             .font(DesignFont.body)
@@ -305,7 +307,7 @@ struct HomeView: View {
                 participants: "최근 2시간 · \(tally.totalVotes)명 참여"
             )
         } else if tally.totalVotes > 0 {
-            Text("온도 투표 \(tally.totalVotes)명 — 5명부터 비율이 열려요")
+            Text("온도 투표 \(tally.totalVotes)명 — 5명이 모이면 결과가 보여요")
                 .font(DesignFont.caption)
                 .foregroundStyle(DesignToken.inkSub)
         }
