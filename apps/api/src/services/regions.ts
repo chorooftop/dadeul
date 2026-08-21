@@ -10,6 +10,17 @@ export interface ResolvedRegion {
   fullName: string
 }
 
+interface KakaoRegionDocument {
+  region_type: 'B'
+  code?: unknown
+  region_1depth_name?: unknown
+  region_2depth_name?: unknown
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 // action-region-resolve: 좌표 → 시군구. 좌표는 판별 즉시 폐기, 저장 금지
 export interface RegionResolver {
   resolve(latitude: number, longitude: number): Promise<ResolvedRegion | null>
@@ -24,29 +35,68 @@ export class KakaoRegionResolver implements RegionResolver {
     url.searchParams.set('x', String(longitude))
     url.searchParams.set('y', String(latitude))
 
-    const response = await fetch(url, {
-      headers: { Authorization: `KakaoAK ${this.restApiKey}` },
-    })
+    let response: Response
+    try {
+      response = await fetch(url, {
+        headers: { Authorization: `KakaoAK ${this.restApiKey}` },
+      })
+    } catch {
+      throw new AppError('INTERNAL_ERROR', 502, 'kakao coord2regioncode request failed')
+    }
     if (!response.ok) {
-      throw new AppError('INTERNAL_ERROR', 502, `kakao coord2regioncode ${response.status}`)
+      if (response.status === 429) {
+        throw new AppError(
+          'INTERNAL_ERROR',
+          503,
+          'kakao coord2regioncode quota exhausted (upstream 429)',
+        )
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new AppError(
+          'INTERNAL_ERROR',
+          502,
+          `kakao coord2regioncode credential rejected (upstream ${response.status})`,
+        )
+      }
+      throw new AppError(
+        'INTERNAL_ERROR',
+        502,
+        `kakao coord2regioncode failed (upstream ${response.status})`,
+      )
     }
 
-    const body = (await response.json()) as {
-      documents?: Array<{
-        region_type: string
-        code: string
-        region_1depth_name: string
-        region_2depth_name: string
-      }>
+    let body: unknown
+    try {
+      body = await response.json()
+    } catch {
+      throw new AppError('INTERNAL_ERROR', 502, 'kakao coord2regioncode invalid JSON')
     }
-    const legal = body.documents?.find((doc) => doc.region_type === 'B')
-    if (!legal || legal.region_2depth_name === '') {
+
+    if (!isRecord(body) || !Array.isArray(body.documents)) {
+      throw new AppError('INTERNAL_ERROR', 502, 'kakao coord2regioncode invalid response')
+    }
+    const documents: unknown[] = body.documents
+    const legal = documents.find(
+      (doc): doc is KakaoRegionDocument => isRecord(doc) && doc.region_type === 'B',
+    )
+    if (!legal) {
+      return null
+    }
+    const { code, region_1depth_name: region1, region_2depth_name: region2 } = legal
+    if (
+      typeof code !== 'string' ||
+      typeof region1 !== 'string' ||
+      typeof region2 !== 'string'
+    ) {
+      throw new AppError('INTERNAL_ERROR', 502, 'kakao coord2regioncode invalid response')
+    }
+    if (region2 === '') {
       return null
     }
     return {
-      code: legal.code.slice(0, 5),
-      name: legal.region_2depth_name,
-      fullName: `${legal.region_1depth_name} ${legal.region_2depth_name}`,
+      code: code.slice(0, 5),
+      name: region2,
+      fullName: `${region1} ${region2}`,
     }
   }
 }

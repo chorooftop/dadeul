@@ -48,6 +48,9 @@ export function buildApp(config: Config, deps: AppDeps): FastifyInstance {
   // 비-AppError의 message는 PG 에러 등 내부 구조를 담을 수 있어 응답에 싣지 않는다 — 로그에만 남긴다
   app.setErrorHandler((error: FastifyError | AppError, request, reply) => {
     if (error instanceof AppError) {
+      if (error.statusCode >= 500) {
+        request.log.error({ err: error }, 'request failed with AppError')
+      }
       return reply.status(error.statusCode).send({ token: error.token, message: error.message })
     }
     if (error.name === 'ZodError') {
