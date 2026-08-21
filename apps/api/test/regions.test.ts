@@ -66,6 +66,39 @@ describe('KakaoRegionResolver', () => {
     },
   )
 
+  // 실측(2026-08-22): 해외 좌표에 카카오는 400 + code -2를 준다. 장애가 아니라 판별 불가다
+  it('서비스 지역 밖 좌표(400 code -2)를 판별 불가(null)로 처리한다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({ code: -2, msg: 'The input parameter value is not in the service area' }),
+          { status: 400, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    )
+
+    await expect(new KakaoRegionResolver('key').resolve(35.6762, 139.6503)).resolves.toBeNull()
+  })
+
+  it('서비스 지역 밖이 아닌 400은 INTERNAL_ERROR/502로 변환한다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ code: -1, msg: 'bad request' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    )
+
+    await expect(new KakaoRegionResolver('key').resolve(37.5, 127)).rejects.toMatchObject({
+      token: 'INTERNAL_ERROR',
+      statusCode: 502,
+      message: 'kakao coord2regioncode failed (upstream 400)',
+    })
+  })
+
   it('그 밖의 카카오 비정상 응답을 INTERNAL_ERROR/502로 변환한다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 500 })))
 

@@ -21,6 +21,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+// 카카오가 서비스 지역 밖 좌표에 쓰는 에러 코드 (400 본문의 code)
+const KAKAO_OUT_OF_SERVICE_AREA = -2
+
+// 400이 "서비스 지역 밖"인지 "잘못된 요청"인지 가른다 — 본문을 못 읽으면 장애로 본다
+async function isOutOfServiceArea(response: Response): Promise<boolean> {
+  try {
+    const body: unknown = await response.json()
+    return isRecord(body) && body.code === KAKAO_OUT_OF_SERVICE_AREA
+  } catch {
+    return false
+  }
+}
+
 // action-region-resolve: 좌표 → 시군구. 좌표는 판별 즉시 폐기, 저장 금지
 export interface RegionResolver {
   resolve(latitude: number, longitude: number): Promise<ResolvedRegion | null>
@@ -57,6 +70,11 @@ export class KakaoRegionResolver implements RegionResolver {
           502,
           `kakao coord2regioncode credential rejected (upstream ${response.status})`,
         )
+      }
+      // 서비스 지역 밖 좌표(해외 등)에 카카오는 400 + code -2를 준다 — 판별 불가이지 장애가 아니다.
+      // null로 반환해 호출부가 REGION_UNRESOLVED(422) 수동 선택 fallback을 태우게 한다.
+      if (response.status === 400 && (await isOutOfServiceArea(response))) {
+        return null
       }
       throw new AppError(
         'INTERNAL_ERROR',
