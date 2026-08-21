@@ -95,13 +95,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Region"
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "422":
-          description: REGION_UNRESOLVED — 판별 불가 좌표(해외 등), 수동 선택 fallback 유도
+          description: REGION_UNRESOLVED(판별 불가 좌표) | REGION_INACTIVE(비활성 지역)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
         "429": { $ref: "#/components/responses/RateLimited" }
+        "502":
+          description: INTERNAL_ERROR — 카카오 credential 거부(401/403) 또는 기타 upstream 실패
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: INTERNAL_ERROR — 지역 판별 미설정 또는 카카오 쿼터 초과(upstream 429)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /v1/regions:
     get:
@@ -292,6 +302,7 @@ components:
             - UNAUTHORIZED
             - RATE_LIMITED
             - BAD_REQUEST
+            - INTERNAL_ERROR
         message:
           type: string
           description: 개발용 설명 — 유저 노출 문구는 클라이언트가 토큰으로 결정

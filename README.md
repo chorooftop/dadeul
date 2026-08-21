@@ -35,10 +35,35 @@ dadeul/
 
 ```bash
 npm install                 # 워크스페이스 전체 설치
-npm run dev:api             # API 개발 서버 (기본 :3000)
+npm run dev:api             # apps/api/.env가 있으면 자동 로드 (기본 :3000)
 npm run test:api            # API 테스트 (vitest)
 npm run build:api           # API 빌드
 ```
+
+API를 처음 실행할 때는 예시 파일을 복사하고 `apps/api/.env`를 채운다.
+
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+| 환경변수 | 필수 여부 | 기본값 | 용도 |
+|---|---|---|---|
+| `DATABASE_URL` | 필수 | 없음 | PostgreSQL 접속 URL. 빈 값으로는 API가 시작되지 않으므로 실제 접속 URL을 설정한다 |
+| `KAKAO_REST_API_KEY` | 선택 | 없음 | 카카오 로컬 API의 서버용 REST API 키. 없으면 지역 판별만 사용할 수 없다 |
+| `NODE_ENV` | 선택 | `development` | 실행 환경 |
+| `PORT` | 선택 | `3000` | API 수신 포트 |
+| `TALLY_WINDOW_HOURS` | 선택 | `2` | 집계 슬라이딩 윈도우(시간) |
+| `MIN_SAMPLE_THRESHOLD` | 선택 | `5` | 비율을 공개할 최소 표본 수 |
+| `DAILY_CREDIT_CAP` | 선택 | `3` | 일일 크레딧 적립 상한 |
+| `RATE_LIMIT_GLOBAL_PER_MIN` | 선택 | `120` | 계정/IP별 전역 분당 요청 상한 |
+| `RATE_LIMIT_BOOTSTRAP_PER_MIN` | 선택 | `5` | IP별 부트스트랩 분당 요청 상한 |
+| `RATE_LIMIT_RESOLVE_PER_MIN` | 선택 | `10` | 계정별 지역 판별 분당 요청 상한 |
+
+`POST /v1/regions/resolve`가 `INTERNAL_ERROR`와 함께 503을 반환하면 먼저 서버 시작 로그와
+`KAKAO_REST_API_KEY` 설정을 확인한다. 키가 설정되어 있다면 카카오 앱 관리의 **[쿼터]** 에서
+소진 여부를 확인한다. 카카오가 키를 거부한 경우(401/403)에는 API가 502를 반환하므로 REST API
+키와 카카오맵 API 활성화 상태를 확인한다. 다들 API 자체의 호출 상한 초과는 이와 별개로
+`RATE_LIMITED` 429를 반환한다. REST API 키는 iOS/Android 앱에 포함하거나 커밋하지 않는다.
 
 ## CLI 사용
 
