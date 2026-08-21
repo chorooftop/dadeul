@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    { "file": "Foundation.dc.html", "x": 0, "y": 0, "w": 960, "h": 460, "title": "00 Foundation — 토큰·타이포" },
+    { "file": "WidgetSmall.dc.html", "x": 0, "y": 560, "w": 170, "h": 170, "title": "위젯 Small — 표본 충족" },
+    { "file": "WidgetMedium.dc.html", "x": 240, "y": 560, "w": 364, "h": 170, "title": "위젯 Medium — 온도 병기" },
+    { "file": "WidgetSmallEmpty.dc.html", "x": 0, "y": 820, "w": 170, "h": 170, "title": "위젯 Small — 표본 미달" },
+    { "file": "Main.dc.html", "x": 1040, "y": 0, "w": 390, "h": 940, "title": "홈 — 2축 투표" }
+  ],
+  "annotations": [
+    { "id": "migrated-from-figma", "x": 660, "y": 560, "w": 300, "text": "2026-08-21 Figma 시안에서 이전.\n토큰·타이포는 specs/design-concept.md 기준.\n폰트: Pretendard 대체로 Noto Sans KR 사용 (spec 대체 규정)." }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -5,6 +5,7 @@
 ## 모노레포 구조
 
 - `specs/` — TOM 명세 (atoms + specs) **+ `specs/openapi.yaml`** (API 계약의 단일 진실)
+- `design/` — 디자인 시안 원본 (Claude Design 캔버스 소스 `*.dc.html` + `canvas.json`). 기준 문서는 `specs/design-concept.md`
 - `apps/api/` — Fastify + PostgreSQL 백엔드 (`@dadeul/api`, npm workspace)
 - `apps/ios/` — SwiftUI 앱 + WidgetKit 익스텐션. **XcodeGen** 사용 — `.xcodeproj`는 커밋하지 않고 `apps/ios/project.yml`이 진실, `xcodegen generate`로 생성. 번들 ID `app.dadeul.ios`, 최소 iOS 17, App Group `group.app.dadeul` (iOS CI는 없음 — 로컬 빌드로 검증)
 - `apps/android/` — Kotlin + Glance _(not created yet)_

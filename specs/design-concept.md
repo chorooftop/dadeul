@@ -2,10 +2,18 @@
 
 > 2026-08-20 사용자 인터뷰로 확정. 앱·위젯 UI 작업은 이 문서를 기준으로 한다.
 >
-> **시안 원본 (단일 진실)**: https://www.figma.com/design/pEZJrbmy4I4fq3iPIuExlg — "다들 — 디자인 시안",
-> chorooftop@gmail.com 계정 drafts (개인 프로젝트 — 회사 계정 사용 금지). 페이지 구성:
-> `00 Foundation`(토큰·타이포) / `01 위젯`(small 충족·미달, medium — 온도 병기 포함) / `02 홈`(2축 투표 카드).
-> 시안 수정은 이 문서의 결정과 동기화한다.
+> **시안 원본 (단일 진실)**: `design/` 디렉터리의 Claude Design 캔버스 (2026-08-21 Figma에서 이전).
+> - 소스: `design/*.dc.html` + `design/canvas.json` — git으로 버전 관리하며, 이 파일들이 시안의 진실이다.
+> - 게시본(브라우저에서 보기·편집): https://claude.ai/code/artifact/074abb20-4cab-41af-be61-a2a046f606a2
+>   ("다들 디자인 시안"). 게시본과 소스가 다르면 마지막에 저장된 쪽을 기준으로 동기화한다.
+> - 아트보드 구성: `Foundation`(토큰·타이포) / `WidgetSmall`(표본 충족) / `WidgetSmallEmpty`(표본 미달) /
+>   `WidgetMedium`(온도 병기) / `Main`(홈 — 2축 투표 카드).
+> - 캔버스 폰트: Pretendard를 쓸 수 없는 환경이라 아래 대체 규정대로 **Noto Sans KR** 사용 (수치·간격 기준은 동일).
+> - 시안 수정은 이 문서의 결정과 동기화한다.
+>
+> **구 Figma 시안 (보관용, 더 이상 수정하지 않음)**: https://www.figma.com/design/pEZJrbmy4I4fq3iPIuExlg —
+> chorooftop@gmail.com 계정 drafts (개인 프로젝트 — 회사 계정 사용 금지). 무료 플랜의 MCP 읽기 제한(월 20회)으로
+> 2026-08-21 Claude Design 캔버스로 이전했다. 이전 시점 전체 스크린샷: `design/reference/figma-full-page-2026-08-21.png`.
 
 ## 방향 (확정 결정)
 
@@ -42,7 +50,7 @@
 | 본문·선택지 | 14 Medium |
 | 캡션 (참여·시각) | 11~12 Regular |
 
-Figma 시안에서 Pretendard를 못 쓰는 환경이면 Noto Sans KR로 대체하고 문서에 표기한다.
+시안 도구에서 Pretendard를 못 쓰는 환경이면 Noto Sans KR로 대체하고 문서에 표기한다 (현 Claude Design 캔버스가 이 경우 — 상단 시안 원본 항목 참조). 앱 구현은 Pretendard 번들이 기준이다.
 
 ## 위젯 원칙
 
