@@ -1,0 +1,18 @@
+# 빌드 컨텍스트는 저장소 루트지만 이미지에 필요한 건 apps/api 뿐이다.
+# 컨텍스트가 커지면 빌드가 느려지고 시크릿이 섞여 들어갈 위험이 생긴다
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+.omc
+PLAN
+specs
+design
+tools
+apps/ios
+apps/android
+**/.env
+**/.env.*
+!apps/api/.env.example
+**/.DS_Store
