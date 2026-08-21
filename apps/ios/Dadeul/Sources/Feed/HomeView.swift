@@ -135,7 +135,7 @@ struct HomeView: View {
                         .fill(DesignToken.stroke)
                         .frame(height: 1)
                     // "신선한 신호"(rule-credit-grant)는 내부 용어 — 사용자 문구로 풀어쓴다
-                    Text("표는 언제든 바꿀 수 있어요 — 크레딧은 새로 참여할 때만 적립돼요")
+                    Text("언제든 바꿀 수 있어요 — 크레딧은 새로 참여할 때만 적립돼요")
                         .font(DesignFont.captionSmall)
                         .foregroundStyle(DesignToken.inkTer)
                         .padding(.top, 11)
