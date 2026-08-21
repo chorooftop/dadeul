@@ -14,7 +14,7 @@ struct FeedTimelineProvider: TimelineProvider {
 
     static let placeholderEntry = FeedEntry(
         date: .now,
-        regionName: "우리 동네",
+        regionName: "현재 위치",
         topOptionLabel: "맑음",
         topOptionRatio: 0
     )
@@ -62,7 +62,7 @@ struct DadeulWidget: Widget {
             DadeulWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("다들")
-        .description("우리 동네의 지금을 투표 집계로 보여줘요.")
+        .description("현재 위치의 지금을 투표 집계로 보여줘요.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
