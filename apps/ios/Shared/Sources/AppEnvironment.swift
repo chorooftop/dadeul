@@ -9,4 +9,7 @@ enum AppEnvironment {
     /// Keychain Access Group — 기기 계정 토큰을 앱·위젯이 함께 읽는다 (계획 3단계)
     /// 실기기에서는 AppIdentifierPrefix(팀 ID)가 앞에 붙는다.
     static let keychainAccessGroup = "app.dadeul.shared"
+
+    /// 위젯 kind — 앱이 스냅샷 갱신 후 reloadTimelines(ofKind:)로 지목하는 식별자
+    static let widgetKind = "DadeulFeedWidget"
 }

@@ -83,7 +83,7 @@ struct HomeView: View {
                     .foregroundStyle(DesignToken.ink)
                 Spacer()
                 if let computedAt = feed.weatherTally?.computedAt {
-                    Text(Self.staleness(computedAt))
+                    Text(Staleness.label(computedAt: computedAt))
                         .font(DesignFont.captionSmall)
                         .foregroundStyle(DesignToken.inkTer)
                 }
@@ -391,14 +391,6 @@ struct HomeView: View {
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(DesignToken.stroke, lineWidth: 1))
     }
 
-    // MARK: - 낡음 정직 표기 (spec-weather-vote-widget Core Requirement 3)
-
-    static func staleness(_ computedAt: Date) -> String {
-        let minutes = max(0, Int(Date().timeIntervalSince(computedAt) / 60))
-        if minutes == 0 { return "방금 전" }
-        if minutes < 60 { return "\(minutes)분 전" }
-        return "\(minutes / 60)시간 전"
-    }
 }
 
 /// 칩 줄바꿈 레이아웃 — 선택지 수가 늘어도 (월 가변 6종) 행을 넘겨 배치한다.

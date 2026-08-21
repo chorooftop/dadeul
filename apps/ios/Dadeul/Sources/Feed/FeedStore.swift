@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WidgetKit
 
 /// 홈 화면의 피드 상태. 위젯과 같은 응답(action-tally-feed)을 소비한다.
 @MainActor
@@ -60,6 +61,7 @@ final class FeedStore {
             }
             wallet = payload.wallet
             state = .loaded
+            persistWidgetSnapshot()
         } catch {
             state = .failed(message: "피드를 불러오지 못했어요 (\(error))")
         }
@@ -71,6 +73,7 @@ final class FeedStore {
         await cast(topicId: "weather", optionValue: option.rawValue, regionCode: regionCode) { result in
             self.weatherTally = result.tally
             self.weatherMyVote = result.vote
+            self.persistWidgetSnapshot()
         }
     }
 
@@ -80,6 +83,7 @@ final class FeedStore {
         await cast(topicId: "weather", optionValue: option.rawValue, regionCode: regionCode) { result in
             self.temperatureTally = result.tally
             self.temperatureMyVote = result.vote
+            self.persistWidgetSnapshot()
         }
     }
 
@@ -92,6 +96,38 @@ final class FeedStore {
                 myVote: result.vote
             )
         }
+    }
+
+    /// 피드 스냅샷을 App Group에 저장하고 위젯 타임라인을 리로드한다 (계획 6단계).
+    /// 위젯은 이 스냅샷만으로 렌더하므로 라벨까지 여기서 확정해 담는다.
+    private func persistWidgetSnapshot() {
+        guard let region, let weatherTally, let temperatureTally else { return }
+        let snapshot = FeedSnapshot(
+            regionName: region.name,
+            computedAt: weatherTally.computedAt,
+            weather: FeedSnapshot.Axis(
+                rows: visibleOptions.map { option in
+                    FeedSnapshot.OptionRow(
+                        label: WeatherOptionDisplay.label(for: option.rawValue),
+                        count: weatherTally.counts.additionalProperties[option.rawValue] ?? 0
+                    )
+                },
+                totalVotes: weatherTally.totalVotes,
+                sampleSufficient: weatherTally.sampleSufficient
+            ),
+            temperature: FeedSnapshot.Axis(
+                rows: temperatureOptions.map { option in
+                    FeedSnapshot.OptionRow(
+                        label: TemperatureOptionDisplay.label(for: option.rawValue),
+                        count: temperatureTally.counts.additionalProperties[option.rawValue] ?? 0
+                    )
+                },
+                totalVotes: temperatureTally.totalVotes,
+                sampleSufficient: temperatureTally.sampleSufficient
+            )
+        )
+        FeedSnapshotStore.save(snapshot)
+        WidgetCenter.shared.reloadTimelines(ofKind: AppEnvironment.widgetKind)
     }
 
     private struct VoteResult {
