@@ -6,6 +6,17 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_URL: z.string().url().optional(),
   KAKAO_REST_API_KEY: z.string().min(1).optional(),
+  // Cloud Run 동시성(20) × 인스턴스 상한(5)에 맞춘 커넥션 상한 — 5×5=25로 pooler 한도를 계산 가능하게 둔다.
+  // pg 기본값 10을 그대로 두면 인스턴스 하나가 커넥션 10개를 잡아 상한이 50까지 튄다
+  DB_POOL_MAX: z.coerce.number().int().positive().default(5),
+  // 프록시(Cloud Run GFE) 뒤에서 X-Forwarded-For를 신뢰할 홉 수. 미설정이면 소켓 주소를 그대로 쓴다.
+  // 로컬·테스트는 프록시가 없으므로 기본 false — 켜두면 클라이언트가 헤더를 위조해 레이트리밋을 우회한다
+  TRUST_PROXY: z.string().min(1).optional(),
+  // 배포 직후 X-Forwarded-For 형식을 실측해 TRUST_PROXY 홉 수를 확정하기 위한 일회성 스위치
+  LOG_CLIENT_IP: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   TALLY_WINDOW_HOURS: z.coerce.number().int().positive().default(2),
   MIN_SAMPLE_THRESHOLD: z.coerce.number().int().positive().default(5),
   DAILY_CREDIT_CAP: z.coerce.number().int().positive().default(3),

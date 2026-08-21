@@ -21,10 +21,37 @@ export interface AppDeps {
   regionResolver: RegionResolver
 }
 
+// Fastify는 trustProxy 없이 소켓 주소를 request.ip로 준다. Cloud Run에서 그건 Google Front End의
+// 주소라서 모든 미인증 사용자가 레이트리밋 키 하나를 공유하게 된다(= 온보딩이 전역으로 막힌다).
+// 신뢰 홉 수를 true로 열면 반대로 클라이언트가 X-Forwarded-For를 위조해 상한을 우회하므로,
+// 배포 환경에서 실측한 값을 TRUST_PROXY로 명시해서만 켠다
+function parseTrustProxy(raw: string | undefined): boolean | number | string {
+  if (raw === undefined) return false
+  if (raw === 'true') return true
+  if (raw === 'false') return false
+  const hops = Number(raw)
+  return Number.isInteger(hops) && hops >= 0 ? hops : raw
+}
+
 export function buildApp(config: Config, deps: AppDeps): FastifyInstance {
   const app = Fastify({
     logger: config.NODE_ENV !== 'test',
+    trustProxy: parseTrustProxy(config.TRUST_PROXY),
   })
+
+  // TRUST_PROXY 홉 수를 추측하지 않기 위한 일회성 계측 — 배포 직후 스모크에서만 켠다
+  if (config.LOG_CLIENT_IP) {
+    app.addHook('onRequest', async (request) => {
+      request.log.info(
+        {
+          xForwardedFor: request.headers['x-forwarded-for'],
+          resolvedIp: request.ip,
+          socketAddress: request.socket.remoteAddress,
+        },
+        'client ip 계측',
+      )
+    })
+  }
 
   app.decorate('config', config)
   app.decorate('deps', deps)

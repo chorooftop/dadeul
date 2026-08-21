@@ -7,7 +7,6 @@ import { buildApp } from '../src/app.js'
 import { loadConfig } from '../src/config.js'
 import { type Db } from '../src/db/client.js'
 import * as schema from '../src/db/schema.js'
-import { ensureWeatherTopic } from '../src/db/seed.js'
 import { type RegionResolver, type ResolvedRegion } from '../src/services/regions.js'
 
 export class FakeRegionResolver implements RegionResolver {
@@ -36,10 +35,10 @@ export async function createTestApp(
 ): Promise<TestContext> {
   const client = new PGlite()
   const db = drizzle(client, { schema }) as unknown as Db
+  // 날씨 주제·전국 시군구 시드도 마이그레이션에 들어 있다 — 프로덕션과 같은 경로로 재현한다
   await migrate(db as never, {
     migrationsFolder: path.join(import.meta.dirname, '../drizzle'),
   })
-  await ensureWeatherTopic(db)
 
   // 기능 테스트는 한 IP(inject)에서 수십 번 호출하므로 레이트 리밋을 사실상 해제한다
   // — 리밋 동작 자체는 rate-limit.test.ts가 낮은 상한으로 별도 검증
