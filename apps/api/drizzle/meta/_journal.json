@@ -15,6 +15,13 @@
       "when": 1787157121162,
       "tag": "0001_temperature-axis",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787340102108,
+      "tag": "0002_region-seed",
+      "breakpoints": true
     }
   ]
 }
