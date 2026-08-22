@@ -14,3 +14,4 @@ design/dadeul-design.html
 apps/ios/*.xcodeproj
 xcuserdata/
 DerivedData/
+.gstack/
