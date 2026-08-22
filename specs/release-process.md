@@ -246,3 +246,21 @@ Supabase Free는 **7일 무활동 시 프로젝트를 일시정지**한다. Clou
 - Cloud Scheduler(무료 티어 job 3개)로 **하루 1회 `GET /health?deep=1`** 을 호출한다
 - Cloud Scheduler가 멈추거나 GCP 프로젝트가 정지되면 같이 무력화된다 — 런칭 전까지는 프로젝트 상태를 주기적으로 눈으로 확인한다
 - **Free 플랜에는 백업이 없다.** 첫 실사용자가 붙는 날이 Pro($25/월) 전환을 판단하는 날이다
+
+### 5.8 iOS가 바라보는 서버
+
+앱은 URL을 코드에 쓰지 않는다. **`specs/openapi.yaml`의 `servers`가 유일한 출처**이고,
+`DadeulAPI.serverURL()`이 빌드 구성으로 그중 하나를 고른다.
+
+| 구성 | 서버 | 값 |
+|---|---|---|
+| Debug | `servers[1]` | `http://localhost:3000` (`npm run dev:api`) |
+| Release | `servers[0]` | 배포 서버 |
+
+- 배포 도메인이 바뀌면 **`openapi.yaml`부터 고치고** 앱을 따라 고친다. 계약이 진실이다
+- HTTPS라 ATS 예외가 필요 없다. localhost HTTP는 Debug 구성에만 격리돼 있다
+
+> **⚠️ Release 빌드 전 필수 확인**
+> `openapi.yaml`의 `servers[0]`은 현재 `https://api.dadeul.app`으로 **예약만 되어 있고
+> 도메인 소유가 확인되지 않았다.** 첫 배포로 `*.run.app` URL이 나오면 그 값으로 교정한 뒤에
+> Release 빌드·TestFlight를 진행한다. 교정 전 Release 빌드는 존재하지 않는 서버를 가리킨다.
