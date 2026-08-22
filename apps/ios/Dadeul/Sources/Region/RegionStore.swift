@@ -32,7 +32,7 @@ final class RegionStore {
         state = .determining
         do {
             let coordinate = try await locationService.currentCoordinate()
-            let client = try DadeulAPI.makeLocalClient()
+            let client = try DadeulAPI.makeClient()
             let response = try await client.resolveRegion(
                 body: .json(.init(latitude: coordinate.latitude, longitude: coordinate.longitude))
             )
@@ -57,7 +57,7 @@ final class RegionStore {
 
     private func loadManualSelection(reason: String) async {
         do {
-            let client = try DadeulAPI.makeLocalClient()
+            let client = try DadeulAPI.makeClient()
             let regions = try await client.listRegions().ok.body.json.regions
             state = .manualSelection(regions: regions, reason: reason)
         } catch {

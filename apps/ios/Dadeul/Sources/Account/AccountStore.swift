@@ -22,7 +22,7 @@ final class AccountStore {
         state = .bootstrapping
         do {
             let deviceKey = try KeychainStore.readOrCreateDeviceKey()
-            let client = try DadeulAPI.makeLocalClient()
+            let client = try DadeulAPI.makeClient()
             let response = try await client.bootstrapAccount(
                 body: .json(.init(deviceKey: deviceKey, platform: .ios))
             )

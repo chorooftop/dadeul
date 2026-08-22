@@ -47,7 +47,7 @@ final class FeedStore {
         self.regionCode = regionCode
         if case .idle = state { state = .loading }
         do {
-            let client = try DadeulAPI.makeLocalClient()
+            let client = try DadeulAPI.makeClient()
             let payload = try await client.getFeed(query: .init(regionCode: regionCode)).ok.body.json
             region = payload.region
             weatherTally = payload.weather.tally
@@ -143,7 +143,7 @@ final class FeedStore {
         apply: (VoteResult) -> Void
     ) async {
         do {
-            let client = try DadeulAPI.makeLocalClient()
+            let client = try DadeulAPI.makeClient()
             let response = try await client.castVote(
                 path: .init(topicId: topicId),
                 body: .json(.init(optionValue: optionValue, regionCode: regionCode))
