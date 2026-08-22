@@ -9,9 +9,11 @@ info:
   version: 0.1.0
   description: 다들 — 지역 기반 실시간 투표 위젯 서비스 API
 
+# servers[0]=Release, servers[1]=Debug — 앱은 DadeulAPI.serverURL()이 빌드 구성으로 고른다.
+# 도메인이 바뀌면 여기부터 고치고 앱을 따라 고친다 (계약이 진실).
 servers:
-  - url: https://api.dadeul.app
-    description: production (예약)
+  - url: https://dadeul-api-629489157595.asia-northeast1.run.app
+    description: production (Cloud Run asia-northeast1)
   - url: http://localhost:3000
     description: local
 

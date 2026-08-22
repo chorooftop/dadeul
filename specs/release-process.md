@@ -147,7 +147,9 @@ develop  ← 모든 작업은 여기에 먼저 push (CI 자동 실행)
 | 리전 | `asia-northeast1` (도쿄) | Tier 1이라 무료 티어가 적용된다. 서울(`asia-northeast3`)은 **Tier 2라 무료 티어 밖** |
 | DB | Supabase Postgres, `ap-northeast-1`(도쿄) | Cloud Run과 같은 리전. 리전이 갈리면 feed의 DB 왕복 6회에 150~200ms가 그냥 얹힌다 |
 | DB 연결 | **Supavisor Transaction mode (포트 6543)** | 오토스케일·스케일투제로라 커넥션이 transient하다. IPv4 |
-| 도메인 | `*.run.app` 기본 도메인 | `api.dadeul.app`은 미확보. 계약(`openapi.yaml`)의 진실은 실제 배포 도메인이다 |
+| 도메인 | `https://dadeul-api-629489157595.asia-northeast1.run.app` | `api.dadeul.app`은 미확보. 계약(`openapi.yaml` `servers[0]`)의 진실은 이 URL이다 |
+| GCP 프로젝트 | `dadeul` (번호 `629489157595`) | |
+| 서비스 / Job | `dadeul-api` / `dadeul-migrate` | 둘 다 `asia-northeast1` |
 
 ### 5.2 사전 준비 (최초 1회)
 
@@ -256,10 +258,22 @@ curl -sf "$URL/v1/regions" | jq '.regions | length'   # 256 (전국 시군구 �
 # bootstrap → resolve(삼성동 좌표) → feed 순으로 실측
 ```
 
-- **`TRUST_PROXY` 홉 수 실측** — `LOG_CLIENT_IP=true`로 한 번 배포해 로그의
-  `xForwardedFor`/`resolvedIp`를 보고 홉 수를 확정한 뒤, 그 값으로 고쳐 배포하고
-  `LOG_CLIENT_IP`는 다시 끈다.
-  `TRUST_PROXY=true`로 열어두면 클라이언트가 헤더를 위조해 레이트리밋을 우회한다
+- **`TRUST_PROXY=1` 확정 (2026-08-22 실측)** — 아래는 배포 후 `LOG_CLIENT_IP=true`로 측정한 결과다.
+  다시 잴 필요는 없지만, Cloud Run이 헤더 처리 방식을 바꾸면 같은 방법으로 재확인한다.
+
+  | 요청 | `X-Forwarded-For` | `request.ip` |
+  |---|---|---|
+  | 정상 | `221.149.133.247` | `221.149.133.247` ✅ |
+  | 위조 헤더(`X-Forwarded-For: 9.9.9.9`) 포함 | `9.9.9.9,221.149.133.247` | `221.149.133.247` ✅ 위조 무시 |
+
+  **Cloud Run GFE는 클라이언트가 보낸 XFF 뒤에 실제 IP를 append한다.** 그래서 오른쪽에서
+  1홉(`TRUST_PROXY=1`)이 항상 진짜 클라이언트 IP다. `TRUST_PROXY=true`로 열면 leftmost인
+  `9.9.9.9`를 채택해 **레이트리밋 상한을 우회할 수 있다** — 절대 쓰지 않는다.
+  참고로 trustProxy 미설정 시 `request.ip`는 `169.254.169.126`(GFE 내부 주소)로 굳는다.
+  전 사용자가 이 키 하나를 공유하게 되는 것이 2-B 블로커의 실체였다.
+
+  재측정이 필요하면 `--set-env-vars TRUST_PROXY=1,LOG_CLIENT_IP=true`로 배포한 뒤
+  `jsonPayload.msg="client ip 계측"` 로그를 보고, **확인 후 `LOG_CLIENT_IP`를 반드시 뺀다**
 - **회귀 검사(필수)**: 서로 다른 두 회선에서 bootstrap을 6회씩 호출해 **각각 독립적으로 카운트**되는지 확인한다.
   프록시 뒤에서 `request.ip`가 GFE 주소로 굳으면 전 사용자가 레이트리밋 키 하나를 공유해
   신규 온보딩이 전역으로 막힌다. 로컬·CI에서는 절대 재현되지 않는다
