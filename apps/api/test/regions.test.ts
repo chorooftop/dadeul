@@ -43,6 +43,60 @@ describe('KakaoRegionResolver', () => {
     expect(init.headers).toEqual({ Authorization: 'KakaoAK test-rest-api-key' })
   })
 
+  // 세종은 하위 시군구가 없어 2depth가 비어 온다. 이를 판별 불가로 처리하면
+  // 세종 사용자만 GPS 자동 판별에서 떨어져 수동 선택으로 밀린다 (2026-08-22 실측)
+  it('2depth가 빈 세종특별자치시를 1depth로 판별한다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            documents: [
+              {
+                region_type: 'B',
+                code: '3611010200',
+                region_1depth_name: '세종특별자치시',
+                region_2depth_name: '',
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    )
+
+    await expect(new KakaoRegionResolver('key').resolve(36.48, 127.289)).resolves.toEqual({
+      code: '36110',
+      name: '세종특별자치시',
+      fullName: '세종특별자치시',
+    })
+  })
+
+  // 북한 좌표는 1depth·2depth가 둘 다 비어 온다 — 표시명을 만들 수 없으므로 판별 불가로 남긴다
+  it('1depth·2depth가 모두 빈 응답(북한)은 판별 불가로 처리한다', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            documents: [
+              {
+                region_type: 'B',
+                code: '90005',
+                address_name: '북한',
+                region_1depth_name: '',
+                region_2depth_name: '',
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    )
+
+    await expect(new KakaoRegionResolver('key').resolve(39.0, 126.0)).resolves.toBeNull()
+  })
+
   it('카카오 쿼터 초과 429를 INTERNAL_ERROR/503으로 변환한다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 429 })))
 

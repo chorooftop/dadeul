@@ -108,13 +108,15 @@ export class KakaoRegionResolver implements RegionResolver {
     ) {
       throw new AppError('INTERNAL_ERROR', 502, 'kakao coord2regioncode invalid response')
     }
-    if (region2 === '') {
+    // 세종특별자치시는 하위 시군구가 없어 2depth가 비어 있다 — 1depth가 곧 시군구 표시명이다.
+    // 반면 북한 좌표(코드 9xxxx)는 1depth·2depth가 둘 다 비므로 판별 불가로 남는다 (2026-08-22 실측)
+    if (region1 === '' && region2 === '') {
       return null
     }
     return {
       code: code.slice(0, 5),
-      name: region2,
-      fullName: `${region1} ${region2}`,
+      name: region2 === '' ? region1 : region2,
+      fullName: region2 === '' ? region1 : `${region1} ${region2}`,
     }
   }
 }
