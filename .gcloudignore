@@ -1,0 +1,19 @@
+# Cloud Build로 업로드할 소스에서 제외할 것.
+# 이 파일이 있으면 gcloud는 .gitignore를 참고하지 않으므로, 시크릿 제외를 여기서 다시 명시한다.
+.git
+.github
+.gcloudignore
+node_modules
+**/node_modules
+**/dist
+.omc
+PLAN
+specs
+design
+tools
+apps/ios
+apps/android
+**/.env
+**/.env.*
+!apps/api/.env.example
+**/.DS_Store

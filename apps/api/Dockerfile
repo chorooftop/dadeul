@@ -1,6 +1,9 @@
 # @dadeul/api 컨테이너 이미지 (Cloud Run asia-northeast1)
 #
-# 빌드 컨텍스트는 저장소 루트다 — npm workspace라 lockfile이 루트에만 있다:
+# 빌드 컨텍스트는 저장소 루트다 — npm workspace라 lockfile이 루트에만 있다.
+# 표준 경로는 Cloud Build다 (루트 cloudbuild.yaml, 로컬 docker 불필요):
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE=<image>
+# 로컬에서 직접 빌드할 때:
 #   docker build -f apps/api/Dockerfile -t <image> .
 #
 # Cloud Run 컨테이너 계약:

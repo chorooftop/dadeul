@@ -151,13 +151,61 @@ develop  ← 모든 작업은 여기에 먼저 push (CI 자동 실행)
 
 ### 5.2 사전 준비 (최초 1회)
 
-1. GCP 프로젝트 생성 + 결제 계정 연결 (무료 티어에도 카드 등록이 필요하다)
-2. Artifact Registry 저장소를 **`asia-northeast1`에** 생성.
-   저장은 0.5GB까지 무료이므로 **cleanup 정책(최근 N개 유지)을 만들 때 같이 건다**
-3. Secret Manager에 `DATABASE_URL`, `KAKAO_REST_API_KEY` 등록.
-   Cloud Run 서비스 계정에 Secret Accessor 권한 부여
-4. Supabase 프로젝트 생성 후 **Connection string(6543 포트)** 확보 → Secret Manager로만 전달.
-   채팅·이슈·커밋에 붙여넣지 않는다
+**A. Supabase** — 콘솔 작업
+
+1. 프로젝트 생성: 리전 **`ap-northeast-1`(도쿄)**, 이름 `dadeul`
+2. Connection string은 **Transaction pooler(포트 6543)** 값을 쓴다. Session(5432)이 아니다.
+   `Connect` → `Transaction pooler` 탭 → `postgresql://postgres.<ref>:<pw>@...pooler.supabase.com:6543/postgres`
+3. 이 값은 Secret Manager로만 옮긴다. 채팅·이슈·커밋에 붙여넣지 않는다
+
+**B. GCP** — 콘솔 + CLI
+
+```bash
+# 0) gcloud 설치·인증 (최초 1회)
+brew install --cask google-cloud-sdk   # 또는 https://cloud.google.com/sdk/docs/install
+gcloud auth login
+gcloud config set project "$PROJECT"
+
+# 1) 프로젝트 + 결제 계정은 콘솔에서 만든다 — 무료 티어에도 카드 등록이 필요하다
+#    https://console.cloud.google.com/projectcreate → 결제 계정 연결
+
+# 2) API 활성화
+gcloud services enable \
+  run.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  secretmanager.googleapis.com \
+  cloudscheduler.googleapis.com
+
+# 3) Artifact Registry — 반드시 asia-northeast1 (동일 리전 pull이 무료)
+gcloud artifacts repositories create dadeul \
+  --repository-format=docker --location=asia-northeast1 \
+  --description="dadeul 컨테이너 이미지"
+
+#    저장은 0.5GB까지 무료다. 이미지가 쌓이면 초과하므로 cleanup 정책을 지금 같이 건다
+gcloud artifacts repositories set-cleanup-policies dadeul \
+  --location=asia-northeast1 --policy=- <<'JSON'
+[{"name":"keep-recent","action":{"type":"Keep"},"mostRecentVersions":{"keepCount":5}},
+ {"name":"delete-old","action":{"type":"Delete"},"condition":{"olderThan":"30d"}}]
+JSON
+
+# 4) 시크릿 등록 — 값은 파일이나 프롬프트로 넣고 셸 히스토리에 남기지 않는다
+printf '%s' "$SUPABASE_CONNECTION_STRING" | \
+  gcloud secrets create DATABASE_URL --data-file=- --replication-policy=automatic
+printf '%s' "$KAKAO_REST_API_KEY" | \
+  gcloud secrets create KAKAO_REST_API_KEY --data-file=- --replication-policy=automatic
+
+# 5) Cloud Run 기본 서비스 계정에 Secret Accessor 부여
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+SA="$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+for SECRET in DATABASE_URL KAKAO_REST_API_KEY; do
+  gcloud secrets add-iam-policy-binding "$SECRET" \
+    --member="serviceAccount:$SA" --role=roles/secretmanager.secretAccessor
+done
+```
+
+무료 한도 메모: Secret Manager는 **활성 버전 6개 + 월 10,000회 접근**이 무료다.
+시크릿을 회전할 때마다 버전이 늘어나므로 **구 버전은 파기한다**.
 
 ### 5.3 배포 절차
 
@@ -165,9 +213,10 @@ develop  ← 모든 작업은 여기에 먼저 push (CI 자동 실행)
 REGION=asia-northeast1
 IMAGE="$REGION-docker.pkg.dev/$PROJECT/dadeul/api:$(git rev-parse --short HEAD)"
 
-# 1) 이미지 빌드 — 빌드 컨텍스트는 저장소 루트다 (npm workspace lockfile이 루트에 있다)
-docker build -f apps/api/Dockerfile -t "$IMAGE" .
-docker push "$IMAGE"
+# 1) 이미지 빌드 — Cloud Build에서 빌드한다. 로컬 docker가 필요 없다.
+#    Dockerfile은 apps/api에 있지만 빌드 컨텍스트는 저장소 루트다(npm workspace lockfile이 루트에 있다).
+#    `--tag`는 루트의 Dockerfile만 보므로 cloudbuild.yaml을 쓴다. 업로드 제외는 .gcloudignore가 정한다.
+gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE="$IMAGE"
 
 # 2) 마이그레이션 — 서비스와 같은 이미지로 Cloud Run Job에서 1회 실행한다.
 #    앱 부팅 시 자동 실행하지 않는다: 인스턴스가 여러 개면 같은 마이그레이션을 동시에 적용하려 경합한다.
@@ -244,6 +293,14 @@ Supabase Free는 **7일 무활동 시 프로젝트를 일시정지**한다. Clou
 생기는 구간에서 실제로 걸린다.
 
 - Cloud Scheduler(무료 티어 job 3개)로 **하루 1회 `GET /health?deep=1`** 을 호출한다
+
+```bash
+gcloud scheduler jobs create http dadeul-keepalive \
+  --location "$REGION" --schedule "0 4 * * *" --time-zone "Asia/Seoul" \
+  --uri "$URL/health?deep=1" --http-method GET \
+  --attempt-deadline 30s
+```
+
 - Cloud Scheduler가 멈추거나 GCP 프로젝트가 정지되면 같이 무력화된다 — 런칭 전까지는 프로젝트 상태를 주기적으로 눈으로 확인한다
 - **Free 플랜에는 백업이 없다.** 첫 실사용자가 붙는 날이 Pro($25/월) 전환을 판단하는 날이다
 
